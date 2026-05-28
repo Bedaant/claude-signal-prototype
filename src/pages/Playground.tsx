@@ -36,6 +36,33 @@ export default function Playground() {
   const [showIDE, setShowIDE] = useState(false);
   const [showFixPanel, setShowFixPanel] = useState(false);
 
+  const handleSetMode = useCallback((newMode: Mode) => {
+    setMode(newMode);
+    setSignal(null);
+    setTerminalLogs([]);
+    setError(null);
+    setShowFixPanel(false);
+
+    if (newMode === 'paste') {
+      // Auto-create an empty file for pasting
+      if (files.length === 0) {
+        const ext = language === 'python' ? 'py' : language === 'typescript' ? 'ts' : 'js';
+        const newFile: ProjectFile = {
+          id: 'file-1',
+          name: `main.${ext}`,
+          language,
+          content: '',
+        };
+        setFiles([newFile]);
+        setOriginalContents({ [newFile.id]: '' });
+        setActiveFile(newFile.id);
+      }
+      setShowIDE(true);
+    } else if (newMode === 'generate') {
+      setShowIDE(false);
+    }
+  }, [files.length, language]);
+
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const decorationsRef = useRef<string[]>([]);
 
@@ -240,7 +267,7 @@ export default function Playground() {
           ].map(m => (
             <button
               key={m.id}
-              onClick={() => setMode(m.id)}
+              onClick={() => handleSetMode(m.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${
                 mode === m.id
                   ? 'bg-accent/10 text-accent border border-accent/20'
