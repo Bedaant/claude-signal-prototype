@@ -4,7 +4,7 @@ import { CheckCircle, AlertTriangle, ShieldAlert, ChevronRight, Copy, Check } fr
 import { Finding } from '../api/client';
 
 interface FixPanelProps {
-  findings: Finding[];
+  findings: Finding[] | undefined;
   activeFile: string;
   onSelectFile: (file: string, line: number) => void;
 }
@@ -32,7 +32,7 @@ export default function FixPanel({ findings, activeFile, onSelectFile }: FixPane
   const [expandedFix, setExpandedFix] = useState<number | null>(null);
   const [copied, setCopied] = useState<number | null>(null);
 
-  if (findings.length === 0) {
+  if (!findings || findings.length === 0) {
     return (
       <div className="p-4 text-center">
         <CheckCircle className="w-6 h-6 text-signal-green mx-auto mb-2" />

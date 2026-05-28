@@ -161,12 +161,12 @@ export default function Playground() {
         addLog(`${icon} ${check.name}: ${check.summary}`);
       });
       addLog(`> Signal: ${analysis.label} — ${analysis.itemCount} item(s)`);
-      if (analysis.findings.length > 0) {
+      if (analysis.findings && analysis.findings.length > 0) {
         addLog(`> ${analysis.findings.length} finding(s) with suggested fixes`);
       }
 
       // Auto-show fix panel if there are findings
-      if (analysis.findings.length > 0) {
+      if (analysis.findings && analysis.findings.length > 0) {
         setShowFixPanel(true);
       }
     } catch (err) {
@@ -485,7 +485,7 @@ export default function Playground() {
                 className="flex-shrink-0 border-l border-border-subtle bg-code-bg overflow-hidden"
               >
                 <FixPanel
-                  findings={signal.findings}
+                  findings={signal.findings || []}
                   activeFile={activeFileData?.name || ''}
                   onSelectFile={handleSelectFinding}
                 />

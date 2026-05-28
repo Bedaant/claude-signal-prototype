@@ -45,7 +45,7 @@ export interface AnalysisResponse {
     guidedVerification?: string;
     findings?: Finding[];
   }>;
-  findings: Finding[];
+  findings?: Finding[];
   notChecked: string[];
   timeSaved: string;
   files?: string[];
