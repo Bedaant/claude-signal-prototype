@@ -101,6 +101,7 @@ const commonFixes = {
 // ==================== JAVASCRIPT/TYPESCRIPT ANALYSIS ====================
 
 function analyzeJavaScript(code, filename = 'main.js') {
+  if (typeof code !== 'string') code = String(code || '');
   const checks = [];
   const findings = [];
 
@@ -252,6 +253,7 @@ function analyzeJavaScript(code, filename = 'main.js') {
 // ==================== PYTHON ANALYSIS ====================
 
 function analyzePython(code, filename = 'main.py') {
+  if (typeof code !== 'string') code = String(code || '');
   const checks = [];
   const findings = [];
 
