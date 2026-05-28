@@ -2,7 +2,6 @@ import { API_BASE_URL } from '../config';
 
 const getBase = () => {
   if (API_BASE_URL) return API_BASE_URL;
-  // Fallback for local development
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
     return 'http://localhost:3000';
   }
@@ -66,43 +65,75 @@ export interface CalibrationResponse {
   }>;
 }
 
-async function post<T>(path: string, body: unknown): Promise<T> {
+async function post<T>(path: string, body: unknown, timeoutMs = 15000): Promise<T> {
   const base = getBase();
   if (!base) throw new Error('API not configured');
-  const res = await fetch(`${base}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(err.error || `HTTP ${res.status}`);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(`${base}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      const text = await res.text();
+      let errMsg = `HTTP ${res.status}`;
+      try {
+        const parsed = JSON.parse(text);
+        errMsg = parsed.error || parsed.message || errMsg;
+      } catch {
+        errMsg = text.slice(0, 200) || errMsg;
+      }
+      throw new Error(errMsg);
+    }
+    return res.json();
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error('Request timed out. The backend may be sleeping — try again in a few seconds.');
+    }
+    throw err;
   }
-  return res.json();
 }
 
 export async function generateCode(prompt: string, language: string): Promise<GenerateResponse> {
-  return post('/api/generate', { prompt, language });
+  return post('/api/generate', { prompt, language }, 35000);
 }
 
 export async function analyzeCode(code: string, language: string): Promise<AnalysisResponse> {
-  return post('/api/analyze', { code, language });
+  return post('/api/analyze', { code, language }, 15000);
 }
 
 export async function analyzeFiles(files: { name: string; content: string }[], language: string): Promise<AnalysisResponse> {
   try {
-    // Try multi-file analysis first (new backend)
-    return await post('/api/analyze', { code: files, language });
+    return await post('/api/analyze', { code: files, language }, 20000);
   } catch {
     // Fallback: analyze each file individually and merge (old backend compatibility)
-    const results = await Promise.all(files.map(f => analyzeCode(f.content, language)));
+    const results = await Promise.allSettled(files.map(f => analyzeCode(f.content, language)));
+    const successful = results
+      .map((r, idx) => ({ result: r, file: files[idx] }))
+      .filter((item): item is { result: PromiseFulfilledResult<AnalysisResponse>; file: typeof files[0] } =>
+        item.result.status === 'fulfilled'
+      )
+      .map(item => item.result.value);
+
+    if (successful.length === 0) {
+      throw new Error('Analysis failed for all files');
+    }
 
     const mergedChecks: AnalysisResponse['checks'] = [];
     const allFindings: Finding[] = [];
-    const checkIds = [...new Set(results.flatMap(r => r.checks.map(c => c.id)))];
+    const checkIds = [...new Set(successful.flatMap(r => r.checks.map(c => c.id)))];
 
     checkIds.forEach(id => {
-      const allForId = results.flatMap((r, idx) =>
+      const allForId = successful.flatMap((r, idx) =>
         r.checks.filter(c => c.id === id).map(c => ({
           ...c,
           findings: (c.findings || []).map(f => ({ ...f, file: files[idx].name }))
@@ -152,22 +183,33 @@ export async function logOverride(userId: string, data: {
   signal_level: string;
   override_decision: string;
 }): Promise<void> {
-  await post('/api/override', { user_id: userId, ...data });
+  await post('/api/override', { user_id: userId, ...data }, 10000);
 }
 
 export async function getCalibration(userId: string): Promise<CalibrationResponse> {
   const base = getBase();
   if (!base) throw new Error('API not configured');
-  const res = await fetch(`${base}/api/calibration/${userId}`);
-  if (!res.ok) throw new Error('Failed to fetch calibration');
-  return res.json();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch(`${base}/api/calibration/${userId}`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!res.ok) throw new Error('Failed to fetch calibration');
+    return res.json();
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
+  }
 }
 
 export async function checkHealth(): Promise<boolean> {
   try {
     const base = getBase();
     if (!base) return false;
-    const res = await fetch(`${base}/api/health`, { signal: AbortSignal.timeout(3000) });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(`${base}/api/health`, { signal: controller.signal });
+    clearTimeout(timeoutId);
     return res.ok;
   } catch {
     return false;

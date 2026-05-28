@@ -8,9 +8,34 @@ const { analyzeCode } = require('./services/analyzer');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Simple in-memory rate limiter
+const rateLimits = new Map();
+const RATE_WINDOW_MS = 60000; // 1 minute
+const RATE_MAX_REQUESTS = 20; // 20 requests per minute per IP
+
+function rateLimit(req, res, next) {
+  const ip = req.ip || req.connection.remoteAddress || 'unknown';
+  const now = Date.now();
+  const entry = rateLimits.get(ip) || { count: 0, resetAt: now + RATE_WINDOW_MS };
+
+  if (now > entry.resetAt) {
+    entry.count = 1;
+    entry.resetAt = now + RATE_WINDOW_MS;
+  } else {
+    entry.count++;
+  }
+
+  rateLimits.set(ip, entry);
+
+  if (entry.count > RATE_MAX_REQUESTS) {
+    return res.status(429).json({ error: 'Too many requests. Please slow down.' });
+  }
+  next();
+}
+
 app.use(cors());
 app.options('*', cors());
-app.use(express.json());
+app.use(express.json({ limit: '512kb' })); // Limit request body size
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -18,10 +43,15 @@ app.get('/api/health', (req, res) => {
 });
 
 // Generate code from prompt
-app.post('/api/generate', async (req, res) => {
+app.post('/api/generate', rateLimit, async (req, res) => {
   try {
     const { prompt, language = 'python' } = req.body;
-    if (!prompt) return res.status(400).json({ error: 'Prompt is required' });
+    if (!prompt || typeof prompt !== 'string') {
+      return res.status(400).json({ error: 'Prompt is required and must be a string' });
+    }
+    if (prompt.length > 2000) {
+      return res.status(400).json({ error: 'Prompt too long (max 2000 characters)' });
+    }
 
     const result = await generateCode(prompt, language);
     res.json(result);
@@ -32,10 +62,22 @@ app.post('/api/generate', async (req, res) => {
 });
 
 // Analyze code
-app.post('/api/analyze', async (req, res) => {
+app.post('/api/analyze', rateLimit, async (req, res) => {
   try {
     const { code, language = 'python' } = req.body;
-    if (!code) return res.status(400).json({ error: 'Code is required' });
+    if (!code) {
+      return res.status(400).json({ error: 'Code is required' });
+    }
+
+    // Support both single string and multi-file array
+    const isMultiFile = Array.isArray(code);
+    const codeSize = isMultiFile
+      ? code.reduce((sum, f) => sum + (f.content?.length || 0), 0)
+      : code.length;
+
+    if (codeSize > 100000) {
+      return res.status(400).json({ error: 'Code too large (max 100KB total)' });
+    }
 
     const result = await analyzeCode(code, language);
     res.json(result);
@@ -46,11 +88,14 @@ app.post('/api/analyze', async (req, res) => {
 });
 
 // Log override decision
-app.post('/api/override', (req, res) => {
+app.post('/api/override', rateLimit, (req, res) => {
   const { user_id, prompt, generated_code, language, signal_level, override_decision } = req.body;
 
   if (!user_id || !prompt || !generated_code) {
     return res.status(400).json({ error: 'Missing required fields' });
+  }
+  if (generated_code.length > 50000) {
+    return res.status(400).json({ error: 'Code too large' });
   }
 
   db.run(

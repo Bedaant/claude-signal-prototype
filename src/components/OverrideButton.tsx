@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, RefreshCw } from 'lucide-react'
+import { Check } from 'lucide-react'
 
 interface OverrideButtonProps {
   onOverride: () => void
@@ -31,9 +31,11 @@ export default function OverrideButton({ onOverride, isOverridden, timeSaved }: 
           {isOverridden && <Check className="w-4 h-4" />}
           {isOverridden ? 'Accepted' : 'Override & Accept'}
         </button>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-accent/30 text-accent hover:bg-accent/10 transition-all">
-          <RefreshCw className="w-4 h-4" />
-          Regenerate
+        <button
+          onClick={() => window.location.reload()}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-accent/30 text-accent hover:bg-accent/10 transition-all"
+        >
+          Try Again
         </button>
       </div>
 

@@ -14,6 +14,7 @@ import {
   LockOpen,
   ChevronDown,
   Lightbulb,
+  HelpCircle,
 } from 'lucide-react'
 import { SignalCheck, CheckStatus } from '../data/types'
 
@@ -58,7 +59,7 @@ export default function SignalPanel({ checks, notChecked, isVisible }: SignalPan
         {checks.map((check) => {
           const cfg = statusConfig[check.status]
           const StatusIcon = cfg.Icon
-          const CustomIcon = iconMap[check.icon]
+          const CustomIcon = iconMap[check.icon] || HelpCircle
           const isOpen = expandedCheck === check.id
 
           return (

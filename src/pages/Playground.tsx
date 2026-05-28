@@ -67,7 +67,7 @@ export default function Playground() {
   const decorationsRef = useRef<string[]>([]);
 
   const addLog = useCallback((msg: string) => {
-    setTerminalLogs(prev => [...prev, msg]);
+    setTerminalLogs(prev => [...prev.slice(-499), msg]);
   }, []);
 
   // Load sample project
@@ -177,6 +177,14 @@ export default function Playground() {
     }
   }, [files, language, addLog]);
 
+  // Cleanup decorations when signal is cleared
+  useEffect(() => {
+    if (!signal && editorRef.current && decorationsRef.current.length > 0) {
+      editorRef.current.removeDecorations(decorationsRef.current);
+      decorationsRef.current = [];
+    }
+  }, [signal]);
+
   // Monaco decorations for findings
   useEffect(() => {
     if (!editorRef.current || !signal?.findings || !activeFile) return;
@@ -187,12 +195,14 @@ export default function Playground() {
     });
 
     const model = editorRef.current.getModel();
-    if (!model) return;
 
-    // Remove old decorations
+    // Remove old decorations FIRST, even if model is temporarily unavailable
     if (decorationsRef.current.length > 0) {
       editorRef.current.removeDecorations(decorationsRef.current);
+      decorationsRef.current = [];
     }
+
+    if (!model) return;
 
     const newDecorations: editor.IModelDeltaDecoration[] = fileFindings.map(f => ({
       range: {
@@ -229,20 +239,21 @@ export default function Playground() {
   }, [language]);
 
   const handleDeleteFile = useCallback((id: string) => {
-    setFiles(prev => {
-      const filtered = prev.filter(f => f.id !== id);
-      if (activeFile === id && filtered.length > 0) {
-        setActiveFile(filtered[0].id);
-      }
-      return filtered;
+    setFiles(prev => prev.filter(f => f.id !== id));
+    setActiveFile(prev => {
+      const remaining = files.filter(f => f.id !== id);
+      if (prev === id && remaining.length > 0) return remaining[0].id;
+      return remaining.length > 0 ? prev : '';
     });
-  }, [activeFile]);
+  }, [files]);
 
+  const selectTimeoutRef = useRef<number | null>(null);
   const handleSelectFinding = useCallback((file: string, line: number) => {
+    if (selectTimeoutRef.current) clearTimeout(selectTimeoutRef.current);
     const fileId = files.find(f => f.name === file || f.id === file)?.id;
     if (fileId) {
       setActiveFile(fileId);
-      setTimeout(() => {
+      selectTimeoutRef.current = window.setTimeout(() => {
         editorRef.current?.revealLineInCenter(line);
         editorRef.current?.setPosition({ lineNumber: line, column: 1 });
       }, 100);
@@ -252,7 +263,8 @@ export default function Playground() {
   const activeFileData = files.find(f => f.id === activeFile);
   const editorLanguage = activeFileData?.language === 'python' ? 'python' :
     activeFileData?.language === 'typescript' ? 'typescript' :
-    activeFileData?.language === 'json' ? 'json' : 'javascript';
+    activeFileData?.language === 'json' ? 'json' :
+    activeFileData?.language === 'plaintext' ? 'plaintext' : 'javascript';
 
   return (
     <div className="h-[calc(100vh-3.5rem)] flex flex-col">

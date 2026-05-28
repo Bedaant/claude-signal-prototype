@@ -1,8 +1,10 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-const dbPath = process.env.NODE_ENV === 'production'
-  ? '/tmp/signal.db'
+const dbPath = process.env.RENDER_DISK_PATH
+  ? path.join(process.env.RENDER_DISK_PATH, 'signal.db')
+  : process.env.NODE_ENV === 'production'
+  ? path.join(__dirname, 'signal.db')
   : path.join(__dirname, 'signal.db');
 
 const db = new sqlite3.Database(dbPath, (err) => {

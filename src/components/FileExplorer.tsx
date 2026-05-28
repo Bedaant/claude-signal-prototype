@@ -61,7 +61,7 @@ export default function FileExplorer({ files, activeFile, onSelect }: FileExplor
                   onClick={() => onSelect(file.id)}
                   className={`w-full flex items-center gap-2 px-6 py-1.5 text-xs transition-all ${
                     activeFile === file.id
-                      ? 'bg-accent/8 text-text-primary border-l-2 border-accent'
+                      ? 'bg-accent/[0.08] text-text-primary border-l-2 border-accent'
                       : 'text-text-muted hover:text-text-secondary hover:bg-surface-hover/50 border-l-2 border-transparent'
                   }`}
                 >
