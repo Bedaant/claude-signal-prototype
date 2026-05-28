@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
-import { User, Bot } from 'lucide-react'
+import { User } from 'lucide-react'
+import SignalLogo from './SignalLogo'
 
 interface ChatMessageProps {
   role: 'user' | 'assistant'
@@ -22,13 +23,13 @@ export default function ChatMessage({ role, children, delay = 0 }: ChatMessagePr
           isUser ? 'bg-accent/20 text-accent' : 'bg-surface border border-border text-text-secondary'
         }`}
       >
-        {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+        {isUser ? <User className="w-4 h-4" /> : <SignalLogo size={16} className="text-accent" animated={false} />}
       </div>
       <div
         className={`max-w-[92%] sm:max-w-[80%] rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-[15px] leading-relaxed ${
           isUser
             ? 'bg-accent/15 text-text-primary rounded-br-md'
-            : 'bg-surface border border-border text-text-primary rounded-bl-md'
+            : 'bg-surface border border-border-subtle text-text-primary rounded-bl-md'
         }`}
       >
         {children}

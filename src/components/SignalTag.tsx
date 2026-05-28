@@ -14,24 +14,24 @@ interface SignalTagProps {
 const config = {
   green: {
     icon: CheckCircle,
-    color: '#22c55e',
-    bg: 'rgba(34,197,94,0.1)',
-    border: '#22c55e',
-    glow: 'rgba(34,197,94,0.15)',
+    color: '#34d399',
+    bg: 'rgba(52,211,153,0.08)',
+    border: '#34d399',
+    glow: 'rgba(52,211,153,0.12)',
   },
   yellow: {
     icon: AlertTriangle,
-    color: '#f59e0b',
-    bg: 'rgba(245,158,11,0.1)',
-    border: '#f59e0b',
-    glow: 'rgba(245,158,11,0.15)',
+    color: '#f5a623',
+    bg: 'rgba(245,166,35,0.08)',
+    border: '#f5a623',
+    glow: 'rgba(245,166,35,0.12)',
   },
   red: {
     icon: XCircle,
     color: '#ef4444',
-    bg: 'rgba(239,68,68,0.1)',
+    bg: 'rgba(239,68,68,0.08)',
     border: '#ef4444',
-    glow: 'rgba(239,68,68,0.15)',
+    glow: 'rgba(239,68,68,0.12)',
   },
 }
 

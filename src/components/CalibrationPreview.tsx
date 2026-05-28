@@ -67,9 +67,9 @@ const steps: Step[] = [
 ]
 
 const levelColors = {
-  green: { text: '#22c55e', bg: 'rgba(34,197,94,0.1)', border: '#22c55e' },
-  yellow: { text: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: '#f59e0b' },
-  red: { text: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: '#ef4444' },
+  green: { text: '#34d399', bg: 'rgba(52,211,153,0.08)', border: '#34d399' },
+  yellow: { text: '#f5a623', bg: 'rgba(245,166,35,0.08)', border: '#f5a623' },
+  red: { text: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: '#ef4444' },
 }
 
 const statusIcons = {
@@ -85,7 +85,7 @@ export default function CalibrationPreview() {
     <div className="max-w-3xl mx-auto">
       {/* Stepper */}
       <div className="flex items-center justify-between mb-8 relative">
-        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-border -translate-y-1/2 -z-0" />
+        <div className="absolute top-1/2 left-0 right-0 h-px bg-border-subtle -translate-y-1/2 -z-0" />
         {steps.map((step, idx) => {
           const isActive = idx === activeStep
           const isCompleted = idx < activeStep
@@ -98,7 +98,7 @@ export default function CalibrationPreview() {
                   ? 'bg-accent border-accent text-white scale-110'
                   : isCompleted
                   ? 'bg-signal-green border-signal-green text-white'
-                  : 'bg-bg border-border text-text-muted hover:border-text-secondary'
+                  : 'bg-bg border-border-subtle text-text-muted hover:border-text-secondary'
               }`}
             >
               {isCompleted ? <CheckCircle className="w-5 h-5" /> : step.id}
@@ -126,7 +126,7 @@ export default function CalibrationPreview() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.3 }}
-          className="rounded-xl border border-border bg-surface p-5"
+          className="rounded-xl border border-border-subtle bg-surface p-5"
         >
           <div className="flex items-center gap-3 mb-4">
             <div
@@ -154,7 +154,7 @@ export default function CalibrationPreview() {
             ))}
           </div>
 
-          <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
+          <div className="flex items-center justify-between mt-6 pt-4 border-t border-border-subtle">
             <button
               onClick={() => setActiveStep(Math.max(0, activeStep - 1))}
               disabled={activeStep === 0}

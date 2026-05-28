@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Loader2, Play, LayoutTemplate } from 'lucide-react';
+import { Send, Loader2, Play } from 'lucide-react';
+import SignalLogo from '../components/SignalLogo';
 import Editor from '@monaco-editor/react';
 import FileExplorer from '../components/FileExplorer';
 import TabBar from '../components/TabBar';
@@ -135,12 +136,12 @@ export default function Playground() {
   return (
     <div className="h-[calc(100vh-3.5rem)] flex flex-col">
       {/* Top prompt bar */}
-      <div className="flex-shrink-0 px-4 py-3 bg-bg border-b border-border">
+      <div className="flex-shrink-0 px-4 py-3 bg-bg border-b border-border-subtle">
         <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            className="px-3 py-2 rounded-md bg-surface border border-border text-text-primary text-sm focus:outline-none focus:border-accent"
+            className="px-3 py-2 rounded-lg bg-surface border border-border-subtle text-text-primary text-sm focus:outline-none focus:border-accent transition-colors"
           >
             <option value="python">Python</option>
             <option value="javascript">JavaScript</option>
@@ -151,13 +152,13 @@ export default function Playground() {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Describe what you want to build..."
-            className="flex-1 px-4 py-2 rounded-md bg-surface border border-border text-text-primary text-sm placeholder:text-text-muted focus:outline-none focus:border-accent"
+            className="flex-1 px-4 py-2 rounded-lg bg-surface border border-border-subtle text-text-primary text-sm placeholder:text-text-dim focus:outline-none focus:border-accent transition-colors"
           />
           <div className="flex gap-2">
             <button
               type="submit"
               disabled={loading || !prompt.trim()}
-              className="px-4 py-2 rounded-md bg-accent text-white text-sm font-medium hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 rounded-lg bg-accent text-bg text-sm font-semibold hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors glow-amber-sm"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               {loading ? 'Generating...' : 'Generate'}
@@ -167,7 +168,7 @@ export default function Playground() {
                 type="button"
                 onClick={handleAnalyze}
                 disabled={analyzing}
-                className="px-4 py-2 rounded-md bg-surface border border-border text-text-primary text-sm font-medium hover:bg-surface-hover disabled:opacity-50 flex items-center gap-2"
+                className="px-4 py-2 rounded-lg bg-surface border border-border-subtle text-text-primary text-sm font-medium hover:bg-surface-hover hover:border-border-hover disabled:opacity-50 flex items-center gap-2 transition-colors"
               >
                 {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 text-accent" />}
                 Analyze
@@ -182,7 +183,7 @@ export default function Playground() {
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
-          className="flex-shrink-0 px-4 py-2 bg-signal-red-bg border-b border-signal-red/30 text-signal-red text-xs"
+          className="flex-shrink-0 px-4 py-2 bg-signal-red-bg border-b border-signal-red/20 text-signal-red text-xs"
         >
           {error}
         </motion.div>
@@ -237,11 +238,13 @@ export default function Playground() {
         </div>
       ) : (
         /* Empty state */
-        <div className="flex-1 flex items-center justify-center text-text-muted">
+        <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <LayoutTemplate className="w-12 h-12 mx-auto mb-4 opacity-30" />
-            <p className="text-sm">Enter a prompt above to generate code in the IDE.</p>
-            <p className="text-xs mt-2 opacity-50">Powered by NVIDIA Llama 3.1 + real static analysis</p>
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-surface border border-border-subtle mb-5">
+              <SignalLogo size={36} className="text-text-dim" animated={false} />
+            </div>
+            <p className="text-sm text-text-muted mb-1">Enter a prompt to generate code</p>
+            <p className="text-xs text-text-dim">NVIDIA Llama 3.1 + real static analysis</p>
           </div>
         </div>
       )}

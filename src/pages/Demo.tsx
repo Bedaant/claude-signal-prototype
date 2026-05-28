@@ -17,7 +17,6 @@ export default function Demo() {
   const [tagExpanded, setTagExpanded] = useState(false)
   const [overridden, setOverridden] = useState(false)
 
-  // Reset state when scenario changes
   useEffect(() => {
     setCodeDone(false)
     setTagExpanded(false)
@@ -35,7 +34,7 @@ export default function Demo() {
         <p className="text-text-secondary mb-4">The demo scenario you requested does not exist.</p>
         <button
           onClick={() => navigate('/demo/risky')}
-          className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium"
+          className="px-4 py-2 rounded-lg bg-accent text-bg text-sm font-semibold hover:bg-accent-hover transition-colors"
         >
           Go to Risky Demo
         </button>
@@ -43,36 +42,38 @@ export default function Demo() {
     )
   }
 
+  const tabs = [
+    { id: 'clean', label: 'Clean', color: 'bg-signal-green', text: 'text-signal-green' },
+    { id: 'risky', label: 'Risky', color: 'bg-signal-yellow', text: 'text-signal-yellow' },
+    { id: 'unsafe', label: 'Unsafe', color: 'bg-signal-red', text: 'text-signal-red' },
+  ]
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      {/* Scenario context */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        <h1 className="text-xl font-bold text-text-primary mb-1">{scenario.title}</h1>
-        <p className="text-sm text-text-secondary">{scenario.description}</p>
+        <p className="text-[11px] font-semibold text-accent uppercase tracking-widest mb-2">Live Demo</p>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-text-primary mb-1">{scenario.title}</h1>
+        <p className="text-sm text-text-muted">{scenario.description}</p>
       </motion.div>
 
       {/* Scenario tabs */}
-      <div className="flex flex-wrap items-center gap-2 mb-4 sm:mb-6">
-        {[
-          { id: 'clean', label: 'Clean', color: '#22c55e' },
-          { id: 'risky', label: 'Risky', color: '#f59e0b' },
-          { id: 'unsafe', label: 'Unsafe', color: '#ef4444' },
-        ].map((tab) => (
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => navigate(`/demo/${tab.id}`)}
-            className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium border transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
               scenarioId === tab.id
-                ? 'bg-surface border-text-muted text-text-primary'
-                : 'bg-transparent border-border text-text-muted hover:text-text-secondary hover:border-text-muted'
+                ? 'bg-surface border-border-hover text-text-primary'
+                : 'bg-transparent border-border-subtle text-text-muted hover:text-text-secondary hover:border-border-hover'
             }`}
           >
             <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ background: tab.color }} />
+              <span className={`w-1.5 h-1.5 rounded-full ${tab.color}`} />
               {tab.label}
             </span>
           </button>

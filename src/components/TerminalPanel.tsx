@@ -18,21 +18,21 @@ export default function TerminalPanel({ logs, signal, isAnalyzing }: TerminalPan
     return (
       <button
         onClick={() => setExpanded(true)}
-        className="w-full flex items-center justify-center py-1 bg-surface border-t border-border hover:bg-surface-hover transition-colors"
+        className="w-full flex items-center justify-center py-1 bg-surface border-t border-border-subtle hover:bg-surface-hover transition-colors"
       >
-        <ChevronUp className="w-4 h-4 text-text-muted" />
+        <ChevronUp className="w-3.5 h-3.5 text-text-dim" />
       </button>
     );
   }
 
   return (
-    <div className="flex flex-col bg-surface border-t border-border" style={{ height: '220px' }}>
+    <div className="flex flex-col bg-code-bg border-t border-border-subtle" style={{ height: '200px' }}>
       {/* Tab bar */}
-      <div className="flex items-center border-b border-border">
+      <div className="flex items-center border-b border-border-subtle">
         <button
           onClick={() => setActiveTab('terminal')}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium transition-colors ${
-            activeTab === 'terminal' ? 'text-text-primary bg-bg border-t-2 border-t-accent' : 'text-text-muted hover:text-text-secondary'
+            activeTab === 'terminal' ? 'text-text-primary bg-bg border-t-2 border-t-accent' : 'text-text-dim hover:text-text-muted'
           }`}
         >
           <Terminal className="w-3 h-3" />
@@ -41,19 +41,19 @@ export default function TerminalPanel({ logs, signal, isAnalyzing }: TerminalPan
         <button
           onClick={() => setActiveTab('signal')}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium transition-colors ${
-            activeTab === 'signal' ? 'text-text-primary bg-bg border-t-2 border-t-accent' : 'text-text-muted hover:text-text-secondary'
+            activeTab === 'signal' ? 'text-text-primary bg-bg border-t-2 border-t-accent' : 'text-text-dim hover:text-text-muted'
           }`}
         >
           {signal?.level === 'green' && <CheckCircle className="w-3 h-3 text-signal-green" />}
           {signal?.level === 'yellow' && <AlertTriangle className="w-3 h-3 text-signal-yellow" />}
           {signal?.level === 'red' && <Shield className="w-3 h-3 text-signal-red" />}
-          {!signal && <Shield className="w-3 h-3 text-text-muted" />}
-          Signal Output
+          {!signal && <Shield className="w-3 h-3 text-text-dim" />}
+          Signal
           {signal && (
             <span className={`text-[10px] px-1 rounded ${
-              signal.level === 'green' ? 'bg-signal-green/20 text-signal-green' :
-              signal.level === 'yellow' ? 'bg-signal-yellow/20 text-signal-yellow' :
-              'bg-signal-red/20 text-signal-red'
+              signal.level === 'green' ? 'bg-signal-green/15 text-signal-green' :
+              signal.level === 'yellow' ? 'bg-signal-yellow/15 text-signal-yellow' :
+              'bg-signal-red/15 text-signal-red'
             }`}>
               {signal.itemCount}
             </span>
@@ -62,14 +62,14 @@ export default function TerminalPanel({ logs, signal, isAnalyzing }: TerminalPan
         <div className="flex-1" />
         <button
           onClick={() => setExpanded(false)}
-          className="px-2 py-1 text-text-muted hover:text-text-primary"
+          className="px-2 py-1 text-text-dim hover:text-text-muted transition-colors"
         >
-          <ChevronDown className="w-4 h-4" />
+          <ChevronDown className="w-3.5 h-3.5" />
         </button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-2">
+      <div className="flex-1 overflow-auto p-2.5">
         <AnimatePresence mode="wait">
           {activeTab === 'terminal' ? (
             <motion.div
@@ -77,10 +77,10 @@ export default function TerminalPanel({ logs, signal, isAnalyzing }: TerminalPan
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="font-mono text-xs space-y-0.5"
+              className="font-mono text-[11px] space-y-0.5 leading-relaxed"
             >
               {logs.length === 0 && !isAnalyzing && (
-                <span className="text-text-muted">Ready. Generate code to see analysis output.</span>
+                <span className="text-text-dim">Ready. Generate code to see analysis output.</span>
               )}
               {isAnalyzing && (
                 <div className="flex items-center gap-2 text-accent">
@@ -94,7 +94,7 @@ export default function TerminalPanel({ logs, signal, isAnalyzing }: TerminalPan
                   log.startsWith('✗') ? 'text-signal-red' :
                   log.startsWith('⚠') ? 'text-signal-yellow' :
                   log.startsWith('>') ? 'text-accent' :
-                  'text-text-secondary'
+                  'text-text-muted'
                 }`}>
                   {log}
                 </div>
@@ -110,20 +110,20 @@ export default function TerminalPanel({ logs, signal, isAnalyzing }: TerminalPan
             >
               {signal ? (
                 <div className="space-y-2">
-                  <div className={`inline-flex items-center gap-2 px-2 py-1 rounded text-xs font-semibold ${
+                  <div className={`inline-flex items-center gap-2 px-2 py-1 rounded-md text-[11px] font-semibold ${
                     signal.level === 'green' ? 'bg-signal-green/10 text-signal-green' :
                     signal.level === 'yellow' ? 'bg-signal-yellow/10 text-signal-yellow' :
                     'bg-signal-red/10 text-signal-red'
                   }`}>
-                    {signal.level === 'green' && <CheckCircle className="w-3.5 h-3.5" />}
-                    {signal.level === 'yellow' && <AlertTriangle className="w-3.5 h-3.5" />}
-                    {signal.level === 'red' && <Shield className="w-3.5 h-3.5" />}
-                    {signal.label} — {signal.itemCount} item{signal.itemCount !== 1 ? 's' : ''} need{signal.itemCount === 1 ? 's' : ''} attention
+                    {signal.level === 'green' && <CheckCircle className="w-3 h-3" />}
+                    {signal.level === 'yellow' && <AlertTriangle className="w-3 h-3" />}
+                    {signal.level === 'red' && <Shield className="w-3 h-3" />}
+                    {signal.label} — {signal.itemCount} item{signal.itemCount !== 1 ? 's' : ''}
                   </div>
                   <SignalPanel checks={signal.checks} notChecked={signal.notChecked} isVisible={true} />
                 </div>
               ) : (
-                <span className="text-text-muted text-xs">No analysis results yet.</span>
+                <span className="text-text-dim text-xs">No analysis results yet.</span>
               )}
             </motion.div>
           )}
