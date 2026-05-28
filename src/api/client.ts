@@ -17,6 +17,20 @@ export interface GenerateResponse {
   model: string;
 }
 
+export interface Finding {
+  line: number;
+  file: string;
+  message: string;
+  severity: 'critical' | 'warn' | 'info';
+  code: string;
+  fix?: {
+    title: string;
+    before: string;
+    after: string;
+    line?: number;
+  };
+}
+
 export interface AnalysisResponse {
   level: 'green' | 'yellow' | 'red';
   label: string;
@@ -29,9 +43,12 @@ export interface AnalysisResponse {
     summary: string;
     detail: string;
     guidedVerification?: string;
+    findings?: Finding[];
   }>;
+  findings: Finding[];
   notChecked: string[];
   timeSaved: string;
+  files?: string[];
 }
 
 export interface CalibrationResponse {
@@ -70,6 +87,10 @@ export async function generateCode(prompt: string, language: string): Promise<Ge
 
 export async function analyzeCode(code: string, language: string): Promise<AnalysisResponse> {
   return post('/api/analyze', { code, language });
+}
+
+export async function analyzeFiles(files: { name: string; content: string }[], language: string): Promise<AnalysisResponse> {
+  return post('/api/analyze', { code: files, language });
 }
 
 export async function logOverride(userId: string, data: {
