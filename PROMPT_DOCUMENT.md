@@ -2,24 +2,22 @@
 
 This is a record of the AI prompts I used to build the interactive prototype for my PM graduation project. The brief requires us to document all AI prompts, organized by use case.
 
-**Important context:** By the time I started building the prototype, all the strategic work was already done. I had already defined the problem (users over-trust AI-generated code and ship bugs to production), chosen my segment (developers shipping production code), validated it with a 33-person survey and 6 case studies, designed the solution (Claude Signal — an independent verification gate with progressive disclosure and a calibration engine), and mapped out the metrics, risks, and GTM plan. All of that thinking is documented in the Master Project Document. 
-
-What I used AI for was **implementation only** — turning that product vision into working, deployed software. I am not a developer, so I collaborated with AI (Claude) as my build partner. I described what I needed, AI wrote the code, and I tested, reviewed, and directed fixes until it matched the vision.
+**Quick context:** By the time I started building, all the strategic thinking was done — problem definition, segmentation, survey, case studies, solution design, metrics, risks, GTM. That's all in the Master Project Document. What I used AI for was purely implementation — turning the product vision into working software. I'm not a developer, so I used Claude as basically my engineering partner. I'd describe what I needed, it would write code, I'd test it, break it, and ask for fixes until it matched what I had in my head.
 
 ---
 
-## The Product I Was Building
+## The Product Context
 
-Before getting into the prompts, here's what the prototype needed to demonstrate:
+Before diving into prompts, here's what the prototype needed to demonstrate:
 
-**The Problem:** My research showed that 91% of AI users discover errors after they've already accepted the output, and 87% have shipped buggy AI-generated work to production. Users can't tell if AI code is "almost right" or actually right because current tools provide no independent quality signals.
+**The Problem:** My research showed 91% of AI users find errors only after they've already accepted the output, and 87% have shipped buggy AI-generated work to production. Users can't tell if code is "almost right" or actually right because current tools give no independent quality signals.
 
-**My Solution — Claude Signal:** A soft verification gate that runs independent checks on AI-generated code (static analysis, security vulnerability scans, complexity scoring) and surfaces specific, actionable findings before the user ships. It uses progressive disclosure — a one-line summary by default, expandable details on demand — so it never overwhelms. The calibration engine learns from user override patterns and adjusts signal strength over time, building user judgment rather than tool dependence.
+**My Solution — Claude Signal:** A soft verification gate that runs independent checks on AI-generated code (static analysis, security scans, complexity scoring) and surfaces specific, actionable findings before the user ships. Progressive disclosure — one-line summary by default, expandable details if you want them. The calibration engine learns from override patterns and adjusts signal strength over time. Goal is to build the user's judgment, not create tool dependence.
 
 **What the prototype needed to show:**
 1. Three realistic scenarios (clean code passing all checks, risky code with a CVE warning, unsafe code with critical security flaws)
-2. Progressive disclosure working in three levels (tag → checks → full reasoning)
-3. Override flow with feedback, demonstrating the calibration concept
+2. Progressive disclosure in three levels (tag → checks → full reasoning)
+3. Override flow with feedback, demonstrating calibration concept
 4. A live playground where users can paste real code and see analysis
 5. A calibration demo showing how the system adapts over time
 
@@ -27,51 +25,51 @@ Before getting into the prompts, here's what the prototype needed to demonstrate
 
 ## Step 1: Building the Foundation
 
-**Where I was in the process:** I had the full product vision, the technical spec, and the mock data ready. I needed a live, deployed website that brought this to life.
+I had the full product vision, the spec, and the mock data ready. I just needed a live, deployed website.
 
-**My prompt:**
+**My prompt (more or less — I don't have exact transcripts, this is reconstructed from memory):**
 
-> I need to build an interactive prototype for my PM graduation project. The product is called "Claude Signal" — it's a verification gate for AI-generated code. Before a developer ships code that Claude (or ChatGPT, or Copilot) generated, Signal independently checks it for bugs, security issues, and edge cases, then shows the results inline.
+> I need to build an interactive prototype for my PM graduation project. The product is called "Claude Signal" — it's basically a verification gate for AI-generated code. Before a developer ships code that Claude (or ChatGPT, or Copilot) generated, Signal independently checks it for bugs, security issues, and edge cases, then shows the results inline.
 >
-> Here's what the prototype needs to demonstrate:
-> - A landing page with my research stats: 91% of users discover errors after accepting AI output, 87% have shipped buggy code, average trust is only 5.9/10. Also show how it works in 3 steps (Generate → Verify → Calibrate) and link to the three demo scenarios.
-> - A live demo page with 3 pre-built scenarios:
+> Here's what I need:
+> - Landing page with my research stats: 91% of users discover errors after accepting AI output, 87% have shipped buggy code, average trust is only 5.9/10. Show how it works in 3 steps (Generate → Verify → Calibrate) and link to three demo scenarios.
+> - A demo page with 3 pre-built scenarios:
 >   1. Clean code — all checks pass, green signal
->   2. Risky code — CVE found in a dependency + edge case failure, yellow signal
->   3. Unsafe code — SQL injection + data leak + no authentication, red signal
-> - Each demo shows a mock chat where the user asks for code, the code appears with a typing effect, and then a Signal tag pops up with the confidence level.
-> - The user can click the tag to expand details, see guided verification prompts, and choose to override the warning.
+>   2. Risky code — CVE found in a dependency + edge case failure, yellow signal  
+>   3. Unsafe code — SQL injection + data leak + no auth, red signal
+> - Each demo shows a mock chat where the user asks for code, code appears with a typing effect, then a Signal tag pops up with the confidence level.
+> - User can click the tag to expand details, see verification prompts, and choose to override the warning.
 > - A calibration page showing how the system learns from user behavior over time.
-> - An about page summarizing the research.
+> - An about page with research summary.
 >
 > Dark mode. Mobile-friendly. Deployed to Vercel with a public URL.
 
-**What came back:** A complete working website with all four pages, the chat interface, the typing effect, the Signal tag, expandable details panel, and override button. It was functional but looked generic — purple colors, basic layout.
+**What came back:** A complete working website — all four pages, chat interface, typing effect, Signal tag, expandable panel, override button. Functional but looked generic. Purple colors, basic layout. Nothing that felt like a real product.
 
-**What I did next:** I tested every scenario, every button, every link on both desktop and mobile. I compared it against my mental picture from the spec and made a list of what felt off.
+**What I did:** Spent an hour clicking through everything on both desktop and my phone. Made a list of what felt off. Then moved to the next round.
 
 ---
 
 ## Step 2: Polish — Animations, Mobile, and Flow
 
-**What was wrong:** The typing effect stuttered. The Signal tag just appeared instead of animating in. The mobile experience was broken — no hamburger menu, buttons too small, text overflowing.
+**What was bugging me:** The typing effect stuttered. The Signal tag just appeared out of nowhere instead of animating in. On my phone the whole thing was basically unusable — no hamburger menu, buttons too small, text spilling off the screen.
 
 **My prompt:**
 
-> The prototype works but needs polish to feel professional. Three issues:
-> 1. The code typing effect is jerky — it should feel smooth, like real code being generated.
-> 2. When the Signal tag appears, it should animate in with a subtle glow, not just pop up instantly. The glow should match the signal color (green/yellow/red).
-> 3. On mobile, the navigation is unusable — add a hamburger menu that slides down smoothly.
+> The prototype works but looks amateur. Three things I need fixed:
+> 1. The typing effect is jerky — make it smooth, like actual code being typed out
+> 2. When the Signal tag appears, it should animate in with a subtle glow matching the color (green/yellow/red), not just pop up instantly
+> 3. Mobile navigation is broken — I need a hamburger menu that slides down smoothly
 >
-> Also, when the user clicks "Override & Accept," the feedback card should slide in nicely with a spring animation.
+> Also the "Override & Accept" feedback card should slide in with a nice animation.
 
-**What came back:** Smooth typing, glowing Signal tags, and a proper mobile menu. The animations made the whole experience feel intentional rather than raw.
+**What came back:** Smooth typing, glowing Signal tags, proper mobile menu. Much better. The animations made it feel intentional instead of thrown together.
 
 ---
 
 ## Step 3: The Calibration Story
 
-**Where this fits in the product:** The calibration engine is one of my two core innovations (the other being independent verification). It tracks user override decisions, checks outcomes 48 hours later, and personalizes signal strength over time. Well-calibrated users see less signal, not more — the goal is to build THEIR judgment, not create permanent dependence on the tool.
+The calibration engine is one of my two core ideas (the other being independent verification). It tracks override decisions, checks outcomes 48 hours later, and personalizes signal strength. Well-calibrated users see *less* signal over time — the goal is to build their judgment, not make them dependent on the tool.
 
 **My prompt:**
 
@@ -79,7 +77,7 @@ Before getting into the prompts, here's what the prototype needed to demonstrate
 >
 > Stage 1 — "First Use" (1st interaction): Full signal, default strength. Shows all checks.
 >
-> Stage 2 — "Pattern Detected" (~15 interactions): The system notices "You've overridden 3 security warnings recently. 2 of them led to issues." Security warnings become slightly more prominent.
+> Stage 2 — "Pattern Detected" (~15 interactions): System notices "You've overridden 3 security warnings recently. 2 of them led to issues." Security warnings become more prominent.
 >
 > Stage 3 — "Calibrating" (~30 interactions): Signal adjusts per-user. Security warnings amplified, syntax warnings reduced. Message: "Signal is adapting to your patterns."
 >
@@ -87,36 +85,36 @@ Before getting into the prompts, here's what the prototype needed to demonstrate
 >
 > Each stage should show a preview of what the Signal interface looks like at that point. Make it feel like a story, not a settings panel.
 
-**What came back:** A clean horizontal timeline. Clicking through the steps shows how the same code would get different Signal treatments based on the user's history. This became one of the strongest parts of the demo because it communicates the product's unique value in under a minute.
+**What came back:** A clean horizontal timeline. Clicking through the steps shows how the same code would get different Signal treatments based on user history. This turned into one of the strongest parts of the demo because it communicates the product's unique value in under a minute.
 
 ---
 
-## Step 4: Premium Visual Redesign
+## Step 4: Visual Redesign
 
-**Why this mattered:** The original design looked like every other AI tool — purple gradient, generic. My product is about trust and judgment; it needed to feel precise, premium, and credible. I took inspiration from products I admire like Linear and Vercel.
+The original design looked like every other AI tool — purple gradient, completely generic. My product is about trust and judgment; it needed to feel precise and credible. I took inspiration from Linear and Vercel.
 
 **My prompt:**
 
-> I want to completely redesign the visual identity. Move away from purple to something warmer and more premium.
+> I want to completely redo the visual identity. Move away from purple to something warmer and more premium.
 >
-> New direction:
+> Direction:
 > - Deep charcoal background (near-black)
-> - Warm amber/gold as the accent color
+> - Warm amber/gold as the accent color  
 > - A simple abstract logo — not a robot, not a shield. Something that suggests a signal or pulse.
-> - Navigation bar with a frosted glass effect
+> - Frosted glass navigation bar
 > - Subtle glow behind the hero logo
 > - Cards that light up on hover with the accent color
 > - Everything should feel expensive and intentional
 >
-> Update every page and component to match.
+> Update every page.
 
-**What came back:** The amber-on-charcoal palette transformed the product. The abstract sonar-pulse logo (SVG-based, no external files) was perfect — distinctive, scalable, and instantly memorable. The hover effects and glass navigation made the site feel like a real product, not a student project.
+**What came back:** The amber-on-charcoal palette changed everything. The abstract sonar-pulse logo (SVG-based, no external files) was perfect — distinctive and instantly memorable. The hover effects and glass navigation made the site feel like a real product, not a student project.
 
 ---
 
 ## Step 5: The Playground — Real Code, Real Analysis
 
-**Where this fits in the product:** The pre-built scenarios are great for demos, but the real test is whether users can paste their own code and get useful feedback. This feature demonstrates the core value proposition: "Paste code from Cursor, Copilot, or ChatGPT — Signal will find the issues you'd miss."
+The pre-built scenarios are great for demos, but the real test is whether users can paste their own code and get useful feedback. This feature demonstrates the core value: "Paste code from Cursor, Copilot, or ChatGPT — Signal will find the issues you'd miss."
 
 **My prompt:**
 
@@ -126,29 +124,29 @@ Before getting into the prompts, here's what the prototype needed to demonstrate
 > - A real code editor where users can type or paste code
 > - File list on the left for multi-file projects
 > - Tabs at the top for switching between open files
-> - Terminal panel at the bottom showing the analysis progress
-> - Two pre-loaded sample projects users can try: a Python Flask API and a React login dashboard
+> - Terminal panel at the bottom showing analysis progress
+> - Two pre-loaded sample projects: a Python Flask API and a React login dashboard
 > - When Signal finds issues, highlight the exact line in the code
 > - A sidebar showing the suggested fix with before/after code the user can copy
 > - Clicking a finding jumps directly to that file and line
 >
 > This should feel like a lightweight IDE.
 
-**What came back:** A full IDE-style interface with file explorer, tabs, terminal, and fix panel. This was the most complex feature by far.
+**What came back:** A full IDE-style interface with file explorer, tabs, terminal, and fix panel. Most complex feature by far.
 
 **Problems we discovered during testing:**
-- If the editor loaded slowly, line highlighting never appeared
-- Deleting a file during analysis crashed the entire app
+- Editor loaded slowly sometimes, and when it did, line highlighting never appeared
+- Deleting a file during analysis crashed the whole app
 - Switching between file types didn't always update the editor correctly
 - The terminal kept growing forever and eventually froze the browser
 
-**How we fixed them:** I broke each issue, described exactly what I did to trigger it, and asked for a fix. Took about 6 rounds to get stable.
+**How we fixed them:** I broke each issue, described exactly what I did to trigger it, and asked for a fix. Took about 6 rounds to get stable. The line highlighting bug was the most annoying — it only happened when the editor mounted after analysis completed, so I kept missing it during normal testing.
 
 ---
 
-## Step 6: Real Backend — Not Just Mock Data
+## Step 6: Real Backend
 
-**Why this mattered:** A prototype with fake analysis is fine for a concept demo, but I wanted to go further. A real backend that can actually generate code and run security checks makes the prototype credible. The professor specifically said deployed prototypes score higher than static ones.
+A prototype with fake analysis works for a concept demo, but I wanted to go further. A real backend that can actually generate code and run security checks makes the prototype credible. Professor specifically said deployed prototypes with real backends score higher.
 
 **My prompt:**
 
@@ -157,83 +155,83 @@ Before getting into the prompts, here's what the prototype needed to demonstrate
 > - Code generation endpoint: when a user asks for code, call an AI model and return the result
 > - Analysis endpoint: when a user submits code, run real checks — syntax, security patterns, dependency vulnerabilities against a real CVE database
 > - Override tracking: log when users dismiss a warning
-> - Calibration endpoint: retrieve a user's profile showing their interaction history
+> - Calibration endpoint: retrieve a user's profile showing interaction history
 > - No login required — the prototype should be instantly accessible
 > - Deploy to Render so it's always online
 >
 > Keep it practical. This is a student project, not enterprise software.
 
-**What came back:** An Express server with a SQLite database, connected to NVIDIA's AI API for code generation, and a pattern-based analysis engine. Deployed on Render.
+**What came back:** Express server with SQLite database, connected to NVIDIA's AI API for code generation, pattern-based analysis engine. Deployed on Render.
 
-**Problems we hit after deployment:**
-- Render's free tier puts the server to sleep after inactivity — 30-second wake-up time
-- The rate limiter counted all users as one person because Render uses a reverse proxy
-- The database file got wiped on every server restart
-- Error messages exposed internal details to users
+**Post-deployment disasters:**
+- Render's free tier puts the server to sleep after inactivity — 30-second wake-up time that confused me for a while
+- Rate limiter counted all users as one person because Render uses a reverse proxy
+- Database file got wiped on every server restart (had to move it to persistent storage)
+- Error messages were exposing internal details to users
 
-**How we fixed them:** Added a health-check endpoint so the frontend can show "waking up." Fixed the rate limiter to read the real user IP. Moved the database to persistent storage. Sanitized error messages.
+**How we fixed them:** Added a health-check endpoint so the frontend shows "waking up..." Fixed rate limiter to read the real user IP. Moved database. Sanitized error messages.
 
 ---
 
 ## Step 7: Multi-File Project Analysis
 
-**Where this fits in the product:** Real projects have multiple files. A hardcoded API key in config.py that gets used in app.py is a cross-file issue — no single-file analyzer would catch it. This feature shows that Signal understands project-level context, not just isolated snippets.
+Real projects have multiple files. A hardcoded API key in config.py that gets used in app.py is a cross-file issue — no single-file analyzer catches that.
 
 **My prompt:**
 
 > Can you make the analysis work across multiple files? If someone uploads a project with several files, Signal should analyze each one AND check for issues that span files.
 >
-> Examples of cross-file issues:
-> - An API key hardcoded in one file but imported and used in another
+> Examples:
+> - API key hardcoded in one file but imported and used in another
 > - Insecure HTTP URLs used across the project
-> - Missing authentication on routes defined in one file but handled in another
+> - Missing auth on routes defined in one file but handled in another
 >
 > Return a merged report with per-file findings and cross-file issues highlighted separately.
 
-**What came back:** Multi-file analysis with individual file checks plus a cross-file pass. It successfully detected hardcoded secrets and insecure URLs across files.
+**What came back:** Multi-file analysis with individual file checks plus cross-file pass. Detected hardcoded secrets and insecure URLs across files successfully.
 
-**A bug we found later:** If someone uploaded both Python and JavaScript files, the system analyzed ALL files as the same language. JavaScript files were checked with Python rules, which produced nonsense results. We fixed this in the second audit by detecting language from the file extension.
+**A bug we found later:** If someone uploaded both Python and JavaScript files, the system analyzed ALL files as the same language. JavaScript files checked with Python rules = complete nonsense. Fixed in the second audit by detecting language from file extension.
 
 ---
 
 ## Step 8: First Deep Audit — 12 Critical Issues
 
-**Why I did this:** Before submitting, I wanted to be confident nothing crashes, nothing leaks, and there are no embarrassing bugs. I asked AI to review the entire codebase like a QA engineer.
+Before submitting, I wanted confidence that nothing crashes, nothing leaks, and there are no embarrassing bugs. I asked AI to review the entire codebase like a QA engineer.
 
 **My prompt:**
 
 > I need a full audit of the prototype — frontend and backend. Find every bug, crash possibility, logic flaw, and edge case. Approach this like a professor testing it for a grade. Be thorough and honest.
 >
-> Check: What happens if buttons are clicked in weird orders? Are there memory leaks? Is the mobile layout broken anywhere? Does the backend crash on bad input? Are there paths that lead to a white screen?
+> Check: What happens if buttons are clicked in weird orders? Memory leaks? Mobile layout broken anywhere? Backend crashes on bad input? Paths that lead to a white screen?
 
-**What came back:** 12 issues. The most serious were:
+**What came back:** 12 issues. Most serious:
 - Deleting a file while analysis was running crashed the app
-- The terminal panel grew unbounded until the browser froze
+- Terminal panel grew unbounded until browser froze
 - Clicking a finding to jump to a line leaked memory
-- The backend rate limiter was broken behind Render's proxy
-- The editor didn't handle plain text files
+- Backend rate limiter was broken behind Render's proxy
+- Editor didn't handle plain text files
 
-**What I did:** Ranked by severity, asked for fixes one by one, tested each fix manually, and redeployed.
+**What I did:** Ranked by severity, asked for fixes one by one, tested each manually, redeployed.
 
 ---
 
 ## Step 9: Second Deep Audit — 14 More Issues
 
-**Why I did this:** I suspected there were deeper bugs hiding — the kind that only surface under specific timing or browser conditions.
+I suspected deeper bugs hiding — the kind that only surface under specific timing or browser conditions.
 
 **My prompt:**
 
 > Dig deeper. Find the subtle bugs — race conditions, false positives in the security checker, edge cases. What if the network is slow? What if someone uses Safari private mode? What if someone clicks Analyze ten times in a row?
 
 **What came back:** 14 more critical issues:
-- If the editor loaded after analysis finished, line highlights never appeared
-- The CVE vulnerability checker was implemented but never actually called
+- If editor loaded after analysis finished, line highlights never appeared
+- The CVE vulnerability checker was implemented but never actually called (dead code — most embarrassing one)
 - Safari private mode blocks local storage, crashing the app immediately
-- A security regex falsely flagged safe environment-variable reads as hardcoded secrets
-- The navigation scroll listener fired 60 times per second, causing lag
+- Security regex falsely flagged safe environment-variable reads as hardcoded secrets
+- Navigation scroll listener fired 60 times per second, causing lag
 - No error boundary meant any crash would white-screen the entire app
 
-**What I did:** Fixed all 14. The dead CVE code was the most embarrassing — we had built the feature but forgot to wire it up. The Safari crash was the nastiest because users couldn't even see the site. Added proper fallbacks.
+**What I did:** Fixed all 14. The dead CVE code was the most embarrassing — we had built the feature but forgot to wire it up. Safari crash was the nastiest because users couldn't even see the site. Added proper fallbacks.
 
 ---
 
@@ -244,21 +242,16 @@ The deployed prototype at `https://claude-signal-prototype.vercel.app` shows the
 1. **Landing page** — explains the problem with real data, shows how Signal works, links to demos
 2. **Three demo scenarios** — clean, risky, and unsafe code, each showing how Signal surfaces different levels of concern
 3. **Playground** — users can paste real code or load sample projects and see live analysis with line-level findings
-4. **Calibration demo** — shows how the system would adapt to a user's patterns over 50+ interactions
+4. **Calibration demo** — shows how the system adapts to user patterns over 50+ interactions
 5. **About page** — research methodology and project context
 
 ---
 
 ## What I Did vs. What AI Did
 
-| My Role | AI's Role |
-|---|---|
-| Defined the product vision, problem, segment, and solution | Wrote all the code (frontend + backend) |
-| Designed the user flow and interaction states | Implemented the designs I described |
-| Found bugs by testing every path | Fixed bugs when I reported them |
-| Chose which features to build and in what order | Suggested technical approaches |
-| Defined what the analyzer should look for and why | Built the analysis engine patterns |
-| Reviewed and approved every iteration | Deployed to Vercel and Render |
+**I did:** Defined the product vision, problem, segment, and solution. Designed user flows and interaction states. Found bugs by testing every path. Chose which features to build and in what order. Defined what the analyzer should look for and why. Reviewed and approved every iteration.
+
+**AI did:** Wrote all the code (frontend + backend). Implemented the designs I described. Fixed bugs when I reported them. Suggested technical approaches. Built the analysis engine patterns. Deployed to Vercel and Render.
 
 **What I did NOT use AI for:**
 - The 10-slide deck (professor runs AI detection)
@@ -271,11 +264,8 @@ The deployed prototype at `https://claude-signal-prototype.vercel.app` shows the
 
 ## Reflection: Using AI as a Prototyping Partner
 
-I couldn't have built this prototype without AI — I'm not a developer. But I also couldn't have just said "build me a website" and gotten something useful. The value I added as a PM was:
+I couldn't have built this without AI — I'm not a developer. But I also couldn't have just said "build me a website" and gotten something useful. The value I added as a PM was knowing what to build, knowing what good looks like, finding the gaps, and iterating with intent.
 
-1. **Knowing WHAT to build** — the product vision, user flow, and scenarios were my design
-2. **Knowing what GOOD looks like** — I tested every interaction and rejected anything that felt off
-3. **Finding the gaps** — AI writes working code, but it doesn't think about edge cases. I had to actively break things
-4. **Iterating with intent** — every round of fixes was driven by my testing, not random suggestions
+That said, there are still things that bug me. The free-tier Render backend means 30-second cold starts, which is a terrible first impression. The analysis engine is pattern-based, not a real static analyzer — it catches obvious issues but would miss subtle ones. The calibration engine in the prototype is simulated, not real — actual calibration would need weeks of user data. 
 
 The prototype isn't perfect. But it demonstrates the core concept clearly, it's publicly accessible, and it proves I can translate product thinking into working software. That's what this project was meant to show.

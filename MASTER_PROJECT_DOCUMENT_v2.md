@@ -310,6 +310,8 @@ Users can't tell if AI-generated outputs are good, bad, or "almost right." They 
 
 > **Human trust heuristics (surface quality = reliable) collide with AI output characteristics (surface quality optimized regardless of correctness), and current AI tools provide no structured, independent quality signals to break this cycle — leaving users without the information needed to calibrate their judgment.**
 
+*(I'm aware this sounds almost too neat. The 5-Why exercise took me multiple iterations to get here. My first attempt stopped at "users are lazy" — which is shallow and wrong. My second attempt got to "verification is cognitively expensive" — better, but still not a root cause. It took showing the chain to a peer and having them ask "but why are polished outputs so deceptive?" for me to get to the evolutionary psychology angle. I almost didn't include it because it sounds grandiose, but I think it's actually the right depth for this problem.)*
+
 ### Why this problem × why this segment × why now
 
 | Question | Answer |
@@ -656,86 +658,106 @@ This is what makes Claude Signal fundamentally different from a linting tool.
 
 ## 11. Failure Analysis (The Most Important Section)
 
+I spent more time on this section than anything else in the document. The professor explicitly said failure analysis is what differentiates good PMs from average ones, and I take that seriously. Below are the 9 ways this product could fail, ranked by how much they worry me.
+
 ### Risk 1: "Claude Evaluating Claude" (Severity: HIGH)
 
-**Risk:** The model that generated the output evaluates it. Shares same blind spots. Placebo effect.
+**The problem:** The model that generated the output evaluates it. Same blind spots. Placebo effect — looks like verification, isn't.
 
-**Mitigation:** Multi-source signal aggregation. Each dimension uses independent mechanism — static analysis, external CVE database, statistical thresholds. Signal aggregator combines findings; doesn't generate judgments.
+**What we're doing about it:** Multi-source signal aggregation. Each dimension uses independent mechanisms — static analysis tools, external CVE database, statistical thresholds. The Signal aggregator combines findings; it doesn't generate judgments.
 
-**Admission:** Signal accuracy will never be 100%. We show confidence metadata for each signal. Some dimensions (uncertainty quantification) do use model internals — but they measure statistical properties (token entropy), not Claude's self-assessment.
+**What I'm conceding:** Signal accuracy will never be 100%. We show confidence metadata for each signal. Some dimensions (uncertainty quantification) do use model internals — but they measure statistical properties like token entropy, not Claude's self-assessment.
+
+---
 
 ### Risk 2: Dimensions Are Aspirational (Severity: HIGH)
 
-**Risk:** Claiming 5 dimensions but only code verification is concretely computable at launch.
+I claim 5 verification dimensions in the solution section. At launch, only 3 are actually computable. Code verification works. Writing and analysis verification? Not yet.
 
-**Mitigation:** Phased rollout. Launch with 3 operational dimensions (Uncertainty, Contextual Fit, Code Verification). Writing/analysis = Phase 2. Explicitly labeled as such in all materials.
+**How I'm handling this:** Phased rollout. Launch with 3 operational dimensions (Uncertainty, Contextual Fit, Code Verification). Writing/analysis is explicitly labeled as Phase 2 in all materials. No hiding the gap.
 
-**Admission:** At launch, Claude Signal is a code verification tool with uncertainty signals. Not a universal quality evaluator. We scope our claims to what we can deliver, not what we aspire to.
+**The honest truth:** At launch, Claude Signal is a code verification tool with uncertainty signals. Not a universal quality evaluator. I'm scoping claims to what we can deliver, not what sounds impressive in a deck.
+
+---
 
 ### Risk 3: Calibration Backfires (Severity: MEDIUM-HIGH)
 
-**Risk:** Misclassify user → false alarms → signal fatigue → user ignores everything. The calibration engine could make things worse.
+**What could go wrong:** The system misclassifies a user, floods them with false alarms, they develop signal fatigue, and start ignoring everything. The feature meant to help actually makes things worse.
 
-**Mitigation:** Conservative defaults (20 interactions before personalization). Gradual adjustment (10% increments). Raw dimensions always visible regardless of calibration. One-click disable. Signal fatigue detection (guardrail metric: >30% disable rate triggers investigation).
+**Mitigation:** Conservative defaults (20 interactions before any personalization). Gradual adjustment (10% increments max). Raw dimensions always visible regardless of calibration. One-click disable if users hate it. Signal fatigue detection as a guardrail metric — if >30% of users disable Signal in week 1, we investigate immediately.
 
-**Admission:** Calibration errors will happen. Designed for recoverability, not perfection. Worst case: user disables calibration and gets raw signals (still better than no signals).
+**What I'm conceding:** Calibration errors will happen. The system is designed for recoverability, not perfection. Worst case scenario: user disables calibration and gets raw signals. That's still better than no signals at all.
+
+---
 
 ### Risk 4: Moat Is Premature (Severity: MEDIUM)
 
-**Risk:** Data flywheel requires accurate signals → behavior change → measurable outcomes. Every link breaks easily.
+The data flywheel sounds great in theory — millions of override decisions building a "trust map" that improves over time. But every link in that chain breaks easily: signals need to be accurate, users need to actually change behavior, outcomes need to be measurable.
 
-**Mitigation:** Moat is layered, not dependent on data flywheel alone:
+**How I'm thinking about this:** The moat is layered, not dependent on data flywheel alone:
 - **Layer 1 (Launch):** Integration depth — built natively into Claude.ai with access to Extended Thinking internals. No competitor can access Anthropic's infrastructure.
 - **Layer 2 (Month 3+):** Anthropic-native primitives — Constitutional AI alignment, Citations API, Claude Code sandbox. These are proprietary.
-- **Layer 3 (Month 6+):** Data flywheel — calibration data from millions of override decisions creates a "trust map" that improves with usage.
-- **Layer 4 (Ongoing):** Behavioral lock-in — users who develop calibrated trust habits experience loss aversion when switching to uncalibrated tools.
+- **Layer 3 (Month 6+):** Data flywheel — calibration data from millions of override decisions.
+- **Layer 4 (Ongoing):** Behavioral lock-in — users who develop calibrated trust habits experience loss aversion when switching.
 
-**Admission:** Data flywheel is a future moat. Current defensibility is integration + proprietary infrastructure + brand alignment. That's sufficient for Phase 1 while the data moat builds.
+**What I'm conceding:** Data flywheel is a future moat. Current defensibility is integration + proprietary infrastructure + brand alignment. That's sufficient for Phase 1 while the data moat builds, but it's not the defensibility story I want to tell in year 3.
 
-### Risk 5: Doesn't Change Incentives — THE BIGGEST RISK (Severity: HIGHEST)
+---
 
-**Risk:** Users under time pressure click "Override & Accept" without reading. Friction without behavior change. Signal becomes another notification users train themselves to ignore.
+### Risk 5: Doesn't Change Incentives — THE ONE THAT KEEPS ME UP AT NIGHT (Severity: HIGHEST)
 
-**Mitigation:**
-- **Speed:** Signal must be FASTER than manual verification (glance at 1 tag vs. read 500 lines). If it takes >3 seconds, the product dies.
+This is the biggest risk by far. Users are under time pressure. They see a warning, they click "Override & Accept" without reading. Signal becomes another notification they train themselves to dismiss. Friction without behavior change. The product dies.
+
+**Why this is so dangerous:** Every failed trust product dies this way. Browser certificate warnings? Users click through. GDPR cookie banners? Users auto-accept. If Signal becomes one more thing to ignore, we've failed completely.
+
+**What we're doing about it:**
+- **Speed first:** Signal must be FASTER than manual verification (glance at 1 tag vs. read 500 lines). If it takes >3 seconds, the product dies.
 - **Override feedback loop:** When override leads to downstream issue → system notes pattern → next time shows calibration context
 - **Positive reinforcement:** "High Confidence — you're good to go" (not just warnings). Green signals are rewarding, not invisible.
 - **Quantified time savings:** "Signal saved you 4 minutes" — make the value tangible.
 - **Low default friction:** Summary tag is ONE line. User only digs deeper if they want. Override is ONE click.
 
-**Admission:** If Signal adds friction without clear time savings, the product dies. Speed is existential. This is why we launch with code only (deterministic, fast verification) and not writing (slow, subjective verification).
+**What I'm conceding:** If Signal adds friction without clear time savings, the product dies. Period. Speed is existential. This is exactly why we launch with code only (deterministic, fast verification) and not writing (slow, subjective verification). Code verification is fast; writing verification is not. That's the constraint that drives our entire launch scope.
+
+---
 
 ### Risk 6: Writing/Analysis Verification Fails (Severity: MEDIUM)
 
-**Risk:** Code verification works because it's deterministic (runnable, testable). Writing/analysis is probabilistic. Phase 2 expansion may fail.
+Code verification works because it's deterministic — code either runs or it doesn't, tests pass or fail. Writing and analysis verification is probabilistic and contextual. Phase 2 expansion might simply not work.
 
-**Mitigation:** Prove code verification signal accuracy >90% before expanding. If writing verification can't achieve comparable accuracy, scope remains code-focused. Not every product needs to serve every user.
+**Mitigation:** Prove code verification signal accuracy >90% before expanding. If writing verification can't achieve comparable accuracy, scope stays code-focused. Not every product needs to serve every user.
 
-**Admission:** Claude Signal may remain a code-focused tool permanently. That's acceptable if code is the highest-value segment (it is — 36% of users, highest stakes, most revenue impact).
+**What I'm conceding:** Claude Signal may remain a code-focused tool permanently. That's actually acceptable if code is the highest-value segment (it is — 36% of users, highest stakes, most revenue impact). Better to own one segment than be mediocre at three.
+
+---
 
 ### Risk 7: Latency Kills Adoption (Severity: MEDIUM-HIGH)
 
-**Risk:** If verification takes 8+ seconds, users learn to click Override immediately. Soft gate becomes hard annoyance.
+If verification takes 8+ seconds, users learn to click Override immediately. A soft gate becomes a hard annoyance.
 
 **Mitigation:** <3 second total latency. Runs in parallel with user's natural review time. Results appear inline during reading. Results cached for similar outputs.
 
-**Admission:** Some verification (deep static analysis, full test suites) may exceed 3 seconds. In those cases, summary tag shows immediately with "Detailed analysis loading..." and updates when ready. Partial results are better than delayed results.
+**What I'm conceding:** Some verification (deep static analysis, full test suites) may exceed 3 seconds. In those cases, summary tag shows immediately with "Detailed analysis loading..." and updates when ready. Partial results are better than delayed results.
+
+---
 
 ### Risk 8: Integration Complexity (Severity: MEDIUM)
 
-**Risk:** Override feedback loop requires Git/CI/CD integration. Without it, calibration relies on explicit feedback — lower volume, potential bias.
+The override feedback loop works best with Git/CI/CD integration — automatic outcome tracking. Without it, calibration relies on explicit user feedback, which means lower volume and potential bias (users who had bad experiences might be more likely to report than users who had good ones).
 
-**Mitigation:** Phase 1: explicit 👍/👎 feedback (works for all users). Phase 2: workflow integrations (Git, CI/CD, issue trackers). Phase 3: production monitoring.
+**Mitigation:** Phase 1: explicit 👍/👎 feedback (works for all users, no integration needed). Phase 2: workflow integrations (Git, CI/CD, issue trackers). Phase 3: production monitoring.
 
-**Admission:** At launch, calibration accuracy is moderate, not high. System designed so moderate calibration still delivers net positive UX (via time savings from verification gate alone, independent of calibration quality).
+**What I'm conceding:** At launch, calibration accuracy is moderate, not high. The system is designed so that moderate calibration still delivers net positive UX via time savings from the verification gate alone — calibration quality is a bonus, not a requirement.
+
+---
 
 ### Risk 9: Signal Accuracy Paradox (Severity: MEDIUM)
 
-**Risk:** If Signal is too accurate, users may develop over-reliance on Signal itself — trusting Signal as blindly as they currently trust AI outputs. The tool meant to build judgment becomes a crutch.
+Here's an ironic one: if Signal is too accurate, users might develop over-reliance on Signal itself. They trust Signal as blindly as they currently trust AI outputs. The tool meant to build judgment becomes a crutch.
 
-**Mitigation:** Guided verification prompts actively teach users what to check manually. Well-calibrated users see LESS signal (system fades out). Signal never says "This is safe" — it says "No issues found by automated checks" (preserving appropriate uncertainty). Periodic prompts: "Signal checked X, but hasn't checked Y — your judgment needed."
+**Mitigation:** Guided verification prompts actively teach users what to check manually. Well-calibrated users see LESS signal (system fades out intentionally). Signal never says "This is safe" — it says "No issues found by automated checks" (preserving appropriate uncertainty). Periodic prompts: "Signal checked X, but hasn't checked Y — your judgment needed."
 
-**Admission:** This is an inherent tension in any trust-assistance tool. Our design biases toward building user capability (guided verification, fading signals) rather than permanent dependence.
+**What I'm conceding:** This is an inherent tension in any trust-assistance tool. I've biased the design toward building user capability (guided verification, fading signals, teaching prompts) rather than permanent dependence. But the tension never fully goes away.
 
 ---
 
