@@ -1,7 +1,22 @@
-import { motion } from 'framer-motion'
-import CalibrationPreview from '../components/CalibrationPreview'
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import CalibrationPreview from '../components/CalibrationPreview';
+import { getCalibration, checkHealth } from '../api/client';
+import { getUserId } from '../config';
 
 export default function Calibration() {
+  const [profile, setProfile] = useState<any>(null);
+  const [backendOnline, setBackendOnline] = useState(false);
+
+  useEffect(() => {
+    checkHealth().then(setBackendOnline);
+    if (backendOnline) {
+      getCalibration(getUserId())
+        .then(data => setProfile(data.profile))
+        .catch(() => setProfile(null));
+    }
+  }, [backendOnline]);
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <motion.div
@@ -16,6 +31,24 @@ export default function Calibration() {
           Signal adapts to your patterns over time. The more you use it, the better it gets at
           surfacing what matters — and staying quiet when you don't need it.
         </p>
+        {profile && profile.interaction_count > 0 && (
+          <div className="mt-4 inline-flex items-center gap-3 px-4 py-2 rounded-lg bg-surface border border-border">
+            <div className="text-center">
+              <div className="text-lg font-bold text-accent">{profile.interaction_count}</div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wide">Interactions</div>
+            </div>
+            <div className="w-px h-8 bg-border" />
+            <div className="text-center">
+              <div className="text-lg font-bold text-signal-yellow">{profile.override_count}</div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wide">Overrides</div>
+            </div>
+            <div className="w-px h-8 bg-border" />
+            <div className="text-center">
+              <div className="text-lg font-bold text-text-primary capitalize">{profile.signal_strength}</div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wide">Strength</div>
+            </div>
+          </div>
+        )}
       </motion.div>
 
       <CalibrationPreview />
@@ -49,5 +82,5 @@ export default function Calibration() {
         ))}
       </div>
     </div>
-  )
+  );
 }

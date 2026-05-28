@@ -125,13 +125,19 @@ export default function Home() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.25 }}
-          className="flex items-center justify-center gap-3"
+          className="flex items-center justify-center gap-3 flex-wrap"
         >
           <Link
-            to="/demo/risky"
+            to="/playground"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-accent text-white text-sm font-semibold hover:bg-accent/90 transition-colors shadow-[0_0_20px_rgba(124,111,224,0.3)]"
           >
-            Try the Demo <ArrowRight className="w-4 h-4" />
+            Try Live Playground <ArrowRight className="w-4 h-4" />
+          </Link>
+          <Link
+            to="/demo/risky"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border text-text-secondary text-sm font-medium hover:border-text-muted hover:text-text-primary transition-colors"
+          >
+            View Scenarios
           </Link>
           <a
             href="#how-it-works"

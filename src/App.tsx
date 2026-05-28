@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import Demo from './pages/Demo'
+import Playground from './pages/Playground'
 import Calibration from './pages/Calibration'
 import About from './pages/About'
 
@@ -11,6 +12,7 @@ function App() {
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/demo/:scenarioId" element={<Demo />} />
+        <Route path="/playground" element={<Playground />} />
         <Route path="/calibration" element={<Calibration />} />
         <Route path="/about" element={<About />} />
       </Route>

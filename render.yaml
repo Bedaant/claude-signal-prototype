@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: claude-signal-backend
+    runtime: node
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: PORT
+        value: 10000
