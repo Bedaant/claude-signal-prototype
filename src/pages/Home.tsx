@@ -125,7 +125,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.25 }}
-          className="flex items-center justify-center gap-3 flex-wrap"
+          className="flex flex-col sm:flex-row items-center justify-center gap-3"
         >
           <Link
             to="/playground"

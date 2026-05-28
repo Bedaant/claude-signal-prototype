@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Loader2, Terminal, AlertCircle, CheckCircle2, Code2 } from 'lucide-react';
+import { Send, Loader2, Terminal, AlertCircle, CheckCircle2, Code2, Play } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import ChatMessage from '../components/ChatMessage';
 import SignalTag from '../components/SignalTag';
@@ -14,6 +14,7 @@ export default function Playground() {
   const [prompt, setPrompt] = useState('');
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const [generatedCode, setGeneratedCode] = useState('');
@@ -58,6 +59,21 @@ export default function Playground() {
     }
   }, [prompt, language, loading]);
 
+  const handleAnalyze = useCallback(async () => {
+    if (!generatedCode) return;
+    setAnalyzing(true);
+    setTagExpanded(false);
+    try {
+      const analysis = await analyzeCode(generatedCode, language);
+      setSignal(analysis);
+      setCodeDone(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Analysis failed');
+    } finally {
+      setAnalyzing(false);
+    }
+  }, [generatedCode, language]);
+
   const handleOverride = useCallback(async () => {
     if (!signal || !generatedCode) return;
     try {
@@ -77,17 +93,17 @@ export default function Playground() {
   const editorLanguage = language === 'python' ? 'python' : language === 'typescript' ? 'typescript' : 'javascript';
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-6"
+        className="mb-4 sm:mb-6"
       >
-        <h1 className="text-xl font-bold text-text-primary mb-1 flex items-center gap-2">
+        <h1 className="text-lg sm:text-xl font-bold text-text-primary mb-1 flex items-center gap-2">
           <Code2 className="w-5 h-5 text-accent" />
           Live Playground
         </h1>
-        <p className="text-sm text-text-secondary">
+        <p className="text-xs sm:text-sm text-text-secondary">
           Type a coding prompt. Claude Signal generates code and runs real verification.
         </p>
         {backendOnline === false && (
@@ -104,12 +120,12 @@ export default function Playground() {
         )}
       </motion.div>
 
-      <form onSubmit={handleSubmit} className="mb-6">
-        <div className="flex gap-2">
+      <form onSubmit={handleSubmit} className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row gap-2">
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            className="px-3 py-2.5 rounded-lg bg-surface border border-border text-text-primary text-sm focus:outline-none focus:border-accent"
+            className="px-3 py-2.5 rounded-lg bg-surface border border-border text-text-primary text-sm focus:outline-none focus:border-accent w-full sm:w-auto"
           >
             <option value="python">Python</option>
             <option value="javascript">JavaScript</option>
@@ -125,7 +141,7 @@ export default function Playground() {
           <button
             type="submit"
             disabled={loading || !prompt.trim()}
-            className="px-4 py-2.5 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2.5 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 w-full sm:w-auto"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             {loading ? 'Generating...' : 'Generate'}
@@ -137,42 +153,51 @@ export default function Playground() {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 rounded-lg bg-signal-red-bg border border-signal-red/30 text-signal-red text-sm"
+          className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg bg-signal-red-bg border border-signal-red/30 text-signal-red text-sm"
         >
           <div className="flex items-center gap-2 font-medium mb-1">
             <AlertCircle className="w-4 h-4" />
-            Generation failed
+            Error
           </div>
           {error}
         </motion.div>
       )}
 
       {showCode && generatedCode && (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           <ChatMessage role="user" delay={0}>
             {prompt}
           </ChatMessage>
 
           <ChatMessage role="assistant" delay={0.2}>
             <div>
-              <p className="mb-2">{explanation}</p>
+              <p className="mb-2 text-sm">{explanation}</p>
               
               <div className="rounded-lg overflow-hidden border border-code-border my-3">
-                <div className="flex items-center justify-between px-3 py-1.5 bg-code-bg border-b border-code-border">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between px-3 py-1.5 bg-code-bg border-b border-code-border gap-2">
                   <span className="text-xs font-medium text-text-muted uppercase tracking-wider">{editorLanguage}</span>
+                  <button
+                    onClick={handleAnalyze}
+                    disabled={analyzing}
+                    className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-md bg-accent/20 text-accent text-xs font-medium hover:bg-accent/30 disabled:opacity-50 transition-colors w-full sm:w-auto"
+                  >
+                    {analyzing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+                    {analyzing ? 'Analyzing...' : 'Analyze This Code'}
+                  </button>
                 </div>
                 <Editor
                   height="300px"
                   language={editorLanguage}
                   value={generatedCode}
                   theme="vs-dark"
+                  onChange={(value) => setGeneratedCode(value || '')}
                   options={{
                     minimap: { enabled: false },
                     scrollBeyondLastLine: false,
                     fontSize: 13,
                     fontFamily: "'JetBrains Mono', monospace",
                     lineNumbers: 'on',
-                    readOnly: true,
+                    readOnly: false,
                     automaticLayout: true,
                   }}
                 />
@@ -208,7 +233,7 @@ export default function Playground() {
       )}
 
       {!showCode && !loading && (
-        <div className="text-center py-16 text-text-muted">
+        <div className="text-center py-12 sm:py-16 text-text-muted">
           <Terminal className="w-10 h-10 mx-auto mb-3 opacity-40" />
           <p className="text-sm">Enter a prompt above to generate and analyze code.</p>
           <p className="text-xs mt-1 opacity-60">Powered by NVIDIA Llama 3.1 + real static analysis</p>

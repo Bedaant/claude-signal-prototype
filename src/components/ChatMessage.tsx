@@ -25,7 +25,7 @@ export default function ChatMessage({ role, children, delay = 0 }: ChatMessagePr
         {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
       </div>
       <div
-        className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-4 py-3 text-[15px] leading-relaxed ${
+        className={`max-w-[92%] sm:max-w-[80%] rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-[15px] leading-relaxed ${
           isUser
             ? 'bg-accent/15 text-text-primary rounded-br-md'
             : 'bg-surface border border-border text-text-primary rounded-bl-md'

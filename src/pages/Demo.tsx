@@ -56,7 +56,7 @@ export default function Demo() {
       </motion.div>
 
       {/* Scenario tabs */}
-      <div className="flex items-center gap-2 mb-6">
+      <div className="flex flex-wrap items-center gap-2 mb-4 sm:mb-6">
         {[
           { id: 'clean', label: 'Clean', color: '#22c55e' },
           { id: 'risky', label: 'Risky', color: '#f59e0b' },
@@ -65,7 +65,7 @@ export default function Demo() {
           <button
             key={tab.id}
             onClick={() => navigate(`/demo/${tab.id}`)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium border transition-all ${
               scenarioId === tab.id
                 ? 'bg-surface border-text-muted text-text-primary'
                 : 'bg-transparent border-border text-text-muted hover:text-text-secondary hover:border-text-muted'

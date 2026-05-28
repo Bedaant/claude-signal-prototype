@@ -65,13 +65,15 @@ export default function SignalPanel({ checks, notChecked, isVisible }: SignalPan
             <div key={check.id} className="rounded-lg overflow-hidden border border-border bg-surface/60">
               <button
                 onClick={() => setExpandedCheck(isOpen ? null : check.id)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-hover transition-colors"
+                className="w-full flex items-start gap-2 sm:gap-3 px-2 sm:px-3 py-2.5 text-left hover:bg-surface-hover transition-colors"
               >
-                <StatusIcon className="w-4 h-4 flex-shrink-0" style={{ color: cfg.color }} />
-                <CustomIcon className="w-4 h-4 flex-shrink-0 text-text-muted" />
-                <span className="text-sm font-medium text-text-primary">{check.name}</span>
-                <span className="flex-1 text-xs text-text-secondary truncate">{check.summary}</span>
-                <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                <StatusIcon className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: cfg.color }} />
+                <CustomIcon className="w-4 h-4 flex-shrink-0 text-text-muted mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium text-text-primary block sm:inline">{check.name}</span>
+                  <span className="text-xs text-text-secondary block sm:inline sm:ml-2">{check.summary}</span>
+                </div>
+                <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }} className="flex-shrink-0 mt-0.5">
                   <ChevronDown className="w-3.5 h-3.5 text-text-muted" />
                 </motion.div>
               </button>
