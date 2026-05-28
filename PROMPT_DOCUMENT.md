@@ -1,252 +1,246 @@
-# Prompt Document — Claude Signal Prototype
+# Prompt Document — Building the Claude Signal Prototype
 
-This document catalogs the AI prompts I used to build the deployed prototype, as required by the project brief. I used Claude as my primary implementation partner for the codebase, with some cross-checking via ChatGPT for architecture decisions.
+This is a record of the prompts I gave to AI to build the interactive prototype for my PM graduation project. The professor asked us to document all AI prompts used, so here they are — written exactly as they happened, step by step.
 
-The professor's guidance was clear: use AI where it helps (like building a prototype), but do the thinking yourself. That's exactly what I did — every strategic decision, every segment call, every metric rationale, and the entire deck are my own work. This document only covers the prompts that generated code.
-
----
-
-## Prompt 1: Initial Prototype Build
-
-**What I needed:** A complete React + TypeScript + Tailwind prototype from scratch.
-
-**The prompt:**
-
-> Build me a React + TypeScript + Tailwind CSS prototype for "Claude Signal" — a soft verification gate for AI-generated code. Here's the full spec:
->
-> Tech stack: React 18, TypeScript, Vite, Tailwind CSS v4, Framer Motion, react-syntax-highlighter, lucide-react, react-router-dom.
->
-> Pages needed:
-> 1. Home — landing page with hero, stats (91%, 87%, <3s), how-it-works steps, 3 demo scenario cards, 4 pillars section
-> 2. Demo (/demo/:scenarioId) — mock Claude chat with typewriter code, Signal tag, expandable panel, override button
-> 3. Calibration — timeline showing how signals adapt over 50+ interactions
-> 4. About — research summary
->
-> Design: Dark mode only (#1a1a2e background, #7c6fe0 accent). Glassmorphism navbar. Mobile responsive.
->
-> The demo needs 3 pre-built scenarios:
-> - Clean (green signal, all checks pass)
-> - Risky (yellow signal, CVE + edge case found)
-> - Unsafe (red signal, SQL injection + data leak)
->
-> Progressive disclosure must work: tag → checks → detail. Override flow must show feedback. Signal tag appears AFTER typewriter code finishes. Use framer-motion for all animations. No TODOs. No placeholders. Production-ready.
->
-> Deploy to Vercel.
-
-**What happened:** This was the big bang prompt. It generated the initial scaffold, all components, routing, and mock data. I had to iterate about 8-10 times to fix animation glitches, mobile layout issues, and to get the typewriter effect smooth.
+**Quick context:** I am not a developer. I know enough about products and user experience to know what I want, but I cannot write production code myself. So I used AI (Claude, mainly) as my implementation partner — I described what I needed, AI wrote the code, and I tested, reviewed, and asked for fixes until it worked. Every strategic decision about the product itself — the segment, the problem, the solution, the metrics — that was all my own thinking, documented in the master project document.
 
 ---
 
-## Prompt 2: Smoothing the Typewriter & Animations
+## Step 1: Getting Started — "Build Me a Working Demo"
 
-**The prompt:**
+**What I needed:** A live, clickable prototype that demonstrates how Claude Signal would work. Something I could share a public link to. The professor specifically said "don't give me a Figma or Lovable link — deploy it to production."
 
-> The typewriter effect on the code block is choppy and causes the whole page to jank. Fix it. Also:
-> - Add a subtle glow pulse animation on the Signal tag when it appears
-> - The override feedback card should slide in with a spring animation, not just appear
-> - Mobile nav is missing — add a hamburger menu with AnimatePresence
-> - The scenario tab switcher should have an active indicator that slides between tabs
+**My prompt:**
+
+> I need to build an interactive prototype for my PM graduation project. It's called "Claude Signal" — a verification gate that checks AI-generated code for bugs and security issues before the user ships it.
 >
-> Make sure all animations run at 60fps. Use framer-motion's layoutId for the tab indicator.
+> I need a website with these pages:
+> 1. A landing page that explains what Signal is, with some stats from my research (91% of users find errors after accepting AI output, 87% have shipped buggy code, etc.)
+> 2. A live demo page showing 3 scenarios — clean code that passes all checks, risky code with a security warning, and unsafe code with multiple critical issues
+> 3. A page showing how the system learns from the user's choices over time (calibration)
+> 4. An about page with my research summary
+>
+> The demo should feel like you're chatting with Claude — the user types a prompt, the code appears with a typing effect, and then a "Signal" tag pops up saying whether the code is safe or not. The user can click to see details, and they can choose to "override" the warning.
+>
+> Dark mode. Mobile-friendly. Deployed to Vercel so anyone can open it.
 
-**What happened:** The typewriter choppiness was because react-syntax-highlighter was re-rendering on every single character. We fixed it by batching character updates. The layoutId tab indicator was a nice touch that made the UI feel polished.
+**What came back:** A complete working website with all four pages, the chat interface, the typing effect, the Signal tag, and the expandable details panel. It looked decent but a bit basic — purple colors, simple layout.
+
+**What I did next:** Tested every button, every link, every scenario on both my laptop and phone. Made a list of what felt clunky.
 
 ---
 
-## Prompt 3: Adding the Calibration Demo Page
+## Step 2: Fixing Animations and Mobile
 
-**The prompt:**
+**What was wrong:** The code typing effect was jerky. The Signal tag just appeared instead of sliding in nicely. On mobile, the navigation was broken — everything was squished together with no menu.
 
-> Add a /calibration page that shows how Signal adapts over time. Use a horizontal stepper with 4 steps:
-> 1. First Use — full signal, default strength
-> 2. Pattern Detected (~15 interactions) — "You've overridden 3 security warnings. 2 led to issues."
-> 3. Calibrating (~30 interactions) — security amplified, syntax reduced
-> 4. Well-Calibrated (50+) — minimal signal, only high-priority items
->
-> Each step should show a mock Signal tag + panel with different content. Click through steps. Use framer-motion AnimatePresence for transitions between steps. Make it feel like a timeline, not a form wizard.
+**My prompt:**
 
-**What happened:** Worked well on first try. The stepper became one of the more impressive parts of the demo because it tells a story.
+> The demo needs polish. Three things:
+> 1. The typing effect on the code feels choppy — can you make it smoother?
+> 2. When the Signal tag appears, it should animate in nicely, not just pop up. Maybe a gentle glow effect?
+> 3. On mobile, the top navigation is completely broken — I need a hamburger menu that opens and closes smoothly.
 
----
-
-## Prompt 4: Visual Overhaul — Purple to Warm Amber
-
-**The prompt:**
-
-> I want to completely overhaul the visual design. Move away from the purple Claude look to something warmer and more premium — like Linear's UI or a Zentry clone.
->
-> New palette:
-> - Background: #08080a (deep charcoal)
-> - Surface: #111114
-> - Accent: #f5a623 (warm amber)
-> - Text primary: #f0f0f5
-> - Text secondary: #8a8a98
->
-> Changes needed:
-> - Abstract sonar pulse logo instead of robot/shield icon
-> - Glass navigation with backdrop blur
-> - Hero section with a subtle amber glow behind the logo
-> - Staggered scroll animations on the landing page (stats, steps, demo cards, pillars)
-> - All signal colors updated: green → #22c55e, yellow → #f5a623, red → #ef4444
-> - Hover effects on cards: border glow with accent color
-> - Update every component to match the new palette
-
-**What happened:** This was a massive change that touched almost every file. The amber aesthetic immediately felt more premium than the original purple. The sonar pulse logo (SVG-based, no external assets) was a good call because it loads instantly and scales perfectly.
+**What came back:** Smooth typing, a glowing Signal tag with a subtle pulse, and a proper mobile menu that slides down when you tap the hamburger icon. Much better.
 
 ---
 
-## Prompt 5: IDE-Style Playground with Monaco Editor
+## Step 3: Adding the Calibration Story
 
-**The prompt:**
+**What I needed:** One of the key innovations in my product is the "calibration engine" — the idea that Signal learns from your choices and adapts over time. I needed a page that shows this story visually.
 
-> Replace the fake code blocks with a real IDE-style playground. Requirements:
-> - Monaco Editor (@monaco-editor/react) for actual code editing
-> - File explorer sidebar showing multiple files
-> - Tab bar showing open files with modified indicators
-> - Terminal panel at the bottom showing analysis logs
-> - Users can paste their own code OR load sample projects
-> - Sample projects: Python Flask API (3 files) and React Login Dashboard (4 files)
-> - When analysis runs, show line-level findings in Monaco using decorations
-> - A FixPanel sidebar showing before/after code suggestions
-> - Users can click a finding to jump to the file + line
+**My prompt:**
+
+> I need another page called Calibration that shows how Signal adapts to a user over time. Think of it like a timeline with 4 steps:
+> - First time using Signal: shows everything, default settings
+> - After about 15 uses: detects a pattern — "you keep ignoring security warnings and they keep causing issues"
+> - After about 30 uses: Signal adjusts — security warnings become more prominent, syntax warnings become quieter
+> - After 50+ uses: you're well-calibrated, Signal only shows the most important warnings
 >
-> Make it feel like VS Code Lite. Dark theme. Monaco should use the 'vs-dark' theme.
+> Make it feel like a story, not a settings panel. Each step should show a preview of what the Signal tag looks like at that stage.
 
-**What happened:** This was the most complex feature. Monaco integration had several gotchas: decorations don't apply if the editor mounts after the signal is set, the editor language must switch per-file, and deleting the active file while analysis is running causes state inconsistencies. We fixed all of these through multiple iteration rounds.
+**What came back:** A clean horizontal timeline where you click through each step and see how the Signal interface changes. This became one of my favorite parts of the demo because it communicates the core product idea in 30 seconds.
 
 ---
 
-## Prompt 6: Full-Stack Backend
+## Step 4: Complete Visual Redesign
 
-**The prompt:**
+**What I needed:** The original design looked like a generic AI tool — purple background, standard layout. I wanted something that felt premium and unique, like the apps I admire (Linear, Vercel, Zentry).
 
-> Build an Express backend for the prototype with these requirements:
-> - SQLite database (local file) for storing interactions and calibration profiles
-> - /api/generate endpoint — calls NVIDIA NIM API (build.nvidia.com, meta/llama-3.1-8b-instruct) for code generation
-> - /api/analyze endpoint — runs real static analysis (pattern-based) for Python and JavaScript, checks OSV CVE database for dependency vulnerabilities
-> - /api/override endpoint — logs user override decisions
-> - /api/calibration/:userId endpoint — returns user's calibration profile
-> - CORS enabled for all origins (frontend is on Vercel)
-> - Rate limiting: 20 requests/minute per IP
-> - Input validation: max 512KB body, max 100KB code, max 2000 char prompts
-> - Deploy to Render using render.yaml blueprint
+**My prompt:**
+
+> I want to completely change the look and feel. Move away from purple to something warmer and more premium.
 >
-> Use dotenv for env vars. NVIDIA_API_KEY should be set in Render dashboard.
+> Here's what I'm imagining:
+> - Deep dark background (almost black)
+> - Warm amber/gold as the accent color
+> - A simple, abstract logo instead of a robot or shield
+> - Glass-like navigation bar that blurs the background
+> - Subtle glow behind the main logo on the landing page
+> - Cards that light up with the accent color when you hover over them
+> - Everything should feel expensive and thoughtful
 
-**What happened:** The backend worked well but had several issues discovered during audit:
-- Rate limiting broke behind Render's reverse proxy (needed trust proxy)
-- OSV CVE lookup was implemented but never actually called in the analysis pipeline (dead code)
-- SQLite path was hardcoded to /tmp/signal.db which Render wipes on restart
-- Error details were leaked to client (err.message containing potential internal info)
+**What came back:** A gorgeous redesign. The amber-on-charcoal palette immediately felt more premium. The abstract sonar-pulse logo was perfect — simple, memorable, no external image files needed. The hover effects on cards made the whole site feel alive.
 
-All fixed in the second audit pass.
+**What I did:** Tested on my phone again. The glow effects were a bit heavy on older phones, so I asked for lighter shadows. Took two tries to get right.
 
 ---
 
-## Prompt 7: Multi-File Project Analysis
+## Step 5: The Playground — Let Users Paste Real Code
 
-**The prompt:**
+**What I needed:** The original demo only showed pre-built scenarios. But for the prototype to feel real, users needed to paste their own code and see Signal analyze it. I also wanted it to look like a real developer environment — not just a text box.
 
-> The analyze endpoint needs to support multi-file projects. When a user pastes multiple files, analyze each one individually, then merge the results. Also add cross-file analysis:
-> - Detect if an API key is hardcoded in one file and used in another
-> - Detect if HTTP (not HTTPS) is used across files
-> - Line-level findings should reference the correct file and line number
-> - Return a merged response with combined checks, all findings, and per-file results
+**My prompt:**
+
+> I want to add a "Playground" where users can paste their own code and see Signal analyze it in real time. But I don't want a boring text box — I want it to feel like a real code editor, like VS Code.
 >
-> If the backend doesn't support arrays yet, add a client-side fallback that analyzes files individually and merges results.
+> Here's what I need:
+> - A real code editor (not a fake one) where users can type or paste code
+> - A file list on the left so users can work with multiple files
+> - Tabs at the top showing open files
+> - A "terminal" panel at the bottom showing what Signal is checking
+> - Pre-loaded sample projects users can try (like a Python API and a React app)
+> - When analysis finds issues, highlight the exact line in the code
+> - A sidebar showing "before and after" fixes the user can copy
+>
+> This should feel like a lite version of an IDE.
 
-**What happened:** The multi-file analysis works but revealed a design flaw — the backend uses a single global `language` parameter, so mixed-language projects (Python + JavaScript) get analyzed with the wrong rules. We fixed this in the deep audit by detecting language per-file from extension and analyzing language buckets separately.
+**What came back:** A full IDE-style interface with a real code editor, file explorer, tabs, terminal, and fix panel. This was by far the most complex feature.
+
+**Problems we hit:**
+- The line highlighting didn't work if the editor loaded after the analysis finished (race condition)
+- If you deleted a file while analysis was running, the whole app crashed
+- Switching between different types of files (Python, JavaScript, text) didn't always switch the editor mode correctly
+- The terminal would keep growing forever and eventually slow down the browser
+
+**How we fixed them:** I tested each scenario, reported what broke, and asked for fixes one by one. Took about 6 rounds of back-and-forth to get stable.
 
 ---
 
-## Prompt 8: Deep Audit & Bug Fixes (Round 1)
+## Step 6: Adding a Real Backend
 
-**The prompt:**
+**What I needed:** Up to this point, the analysis was fake — just mock data. I wanted a real backend that could actually analyze code, look up security vulnerabilities, and generate code using an AI model.
 
-> Do a comprehensive code audit of the entire codebase — frontend and backend. Find every bug, crash possibility, logic flaw, and edge case. Be extremely thorough. I'm submitting this to professors who will test it.
+**My prompt:**
+
+> I need a backend server for the prototype. Here's what it should do:
+> - Store user interactions in a database
+> - When someone asks for code generation, call an AI model and return the generated code
+> - When someone submits code for analysis, run actual checks — syntax, security patterns, dependency vulnerabilities
+> - Track when users "override" a warning so we can show the calibration concept
+> - Allow the frontend to talk to it without any login or authentication
+> - Deploy it to Render so it's always online
 >
-> Specifically check:
-> - Every useEffect dependency array
-> - Every state update that could be stale
-> - Every API error path
-> - Every regex in the analyzer
-> - Memory leaks (timers, intervals, event listeners)
-> - Type safety gaps
-> - CORS and security issues
-> - Responsive breakpoint issues
->
-> Return findings as: File → Issue → Severity → Fix.
+> Keep it simple. I don't need enterprise-grade security — this is a student project prototype.
 
-**What happened:** Found 12 issues. The most critical were:
-1. `handleDeleteFile` used stale `files` reference inside `setActiveFile` updater
-2. `addLog` had unbounded growth — would crash after enough logs
-3. `handleSelectFinding` created timeouts that weren't cleaned up on unmount
-4. `decorationsRef` wasn't cleared when signal was reset
-5. Backend rate limiter used `req.ip` without trust proxy (all users shared one bucket)
-6. `editorLanguage` didn't handle `plaintext` for requirements.txt
-7. `analysis.findings?.length` could crash on old backend responses
+**What came back:** An Express server with a SQLite database, connected to NVIDIA's AI API for code generation, and a pattern-based analysis engine for Python and JavaScript. Deployed on Render.
 
-All fixed and redeployed.
+**Problems we hit:**
+- The backend kept going to sleep on Render's free tier (takes 30 seconds to wake up)
+- All users were sharing the same rate limit because the server didn't know who was who behind Render's proxy
+- The database file was getting wiped every time Render restarted
+- Error messages from the backend were leaking internal details to users
+
+**How we fixed them:** Added a health-check endpoint so the frontend can show "waking up" messages. Fixed the rate limiter to read the correct user IP. Moved the database to persistent storage. Stripped internal error details from user-facing responses.
 
 ---
 
-## Prompt 9: Deeper Audit (Round 2)
+## Step 7: Multi-File Projects
 
-**The prompt:**
+**What I needed:** Real developers don't work with single files — they have projects with multiple files. I wanted Signal to analyze entire projects and find issues that span across files.
 
-> I need MORE issues. Dig deeper. Look for:
-> - Subtle race conditions
-> - False positives/negatives in the analyzer regex patterns
-> - Missing error boundaries
-> - LocalStorage failures in Safari private mode
-> - Monaco editor mount races with decorations
-> - Backend memory leaks
-> - Any path that produces a white screen
+**My prompt:**
+
+> Can you make the analysis work with multiple files? Like if someone pastes a Python project with an app.py, a config.py, and a utils.py, Signal should analyze all three and find issues across them — not just in one file.
 >
-> Don't stop at surface-level bugs. Find the ones that only show up under specific user action sequences.
+> For example, if the API key is hardcoded in config.py but used in app.py, that should be flagged as a cross-file issue.
 
-**What happened:** Found 14 more critical issues:
-1. Monaco decorations never applied if editor mounted after analysis completed (race condition)
-2. OSV CVE lookup was dead code — function defined but never called
-3. Mixed-language projects analyzed with wrong rules (all files forced to global language)
-4. No error boundary — any React crash = white screen
-5. `localStorage.setItem` throws in Safari private mode = app crash on load
-6. Analyzer `cond` function for timeout checks was file-level, causing false negatives
-7. `os.environ.get("API_KEY")` matched hardcoded secret regex = false positive
-8. Calibration page made double health checks due to dependency array issue
-9. No 404 route or /demo redirect
-10. Navbar scroll listener fired 60x/second unthrottled
-11. TypewriterCode caused re-render storm — SyntaxHighlighter retokenized every character
-12. Backend error details leaked to client
-13. Rate limiter Map grew unbounded (memory leak)
-14. `getUserId` used `Math.random()` with collision risk
+**What came back:** Multi-file analysis that checks each file individually, then does a cross-file pass. It found cross-file issues like hardcoded secrets and insecure HTTP URLs.
 
-All fixed and redeployed.
+**Problem we discovered later:** If someone uploaded both Python and JavaScript files, the system analyzed ALL files as the same language. So JavaScript files were checked with Python rules, which obviously made no sense. We fixed this in a later audit by detecting the language from the file extension.
 
 ---
 
-## Prompts I Did NOT Use
+## Step 8: First Deep Audit — Finding What's Broken
 
-These are the things I did **not** ask AI to do, per the professor's guidance:
+**What I needed:** Before submitting, I wanted to make sure nothing crashes, nothing leaks, and there are no obvious bugs. I asked AI to audit the entire codebase like a QA engineer.
 
-| Task | Why I Did It Myself |
+**My prompt:**
+
+> I need you to audit the entire prototype — frontend and backend — and find every bug, crash, and logic flaw. Pretend you're a professor testing this for a grade. Be brutal.
+>
+> Check things like: does anything crash if I click buttons in a weird order? Are there memory leaks? Is the mobile layout broken anywhere? Does the backend accept garbage input? Are there any paths that lead to a white screen?
+
+**What came back:** 12 issues, several of them serious:
+- Deleting a file while analysis was running crashed the app
+- The terminal panel would grow forever and eventually freeze the browser
+- Clicking on an analysis result to jump to a line created memory leaks
+- The backend rate limiter was broken behind Render's proxy
+- The code editor didn't handle plain text files (like requirements.txt)
+
+**What I did:** Prioritized the critical ones, asked for fixes, tested each fix manually, and redeployed.
+
+---
+
+## Step 9: Second Deep Audit — Digging Deeper
+
+**What I needed:** I had a feeling there were more subtle bugs hiding. The kind that only show up when you do things in a specific order.
+
+**My prompt:**
+
+> I need you to dig deeper. Find the bugs that don't show up immediately — the race conditions, the false positives in the security checker, the edge cases. What happens if the internet is slow and the editor loads after the analysis? What happens in Safari private mode? What if someone rapid-clicks the analyze button?
+
+**What came back:** 14 more critical issues:
+- If the code editor loaded slowly, the line highlighting never appeared at all
+- The security vulnerability checker (OSV) was implemented but never actually called — dead code
+- Safari private mode blocks local storage, which crashed the entire app on first load
+- A regex in the security checker was flagging safe code as dangerous
+- The scroll listener on the navigation bar fired 60 times per second, causing lag
+- There was no error boundary — any single crash would white-screen the entire app
+
+**What I did:** Fixed all 14. The dead code one was embarrassing — we had written a CVE lookup function but forgot to actually call it. The Safari crash was nasty because it happened before anything even rendered. Added a try-catch wrapper and a fallback.
+
+---
+
+## What This Prototype Demonstrates
+
+The prototype shows the core experience of Claude Signal:
+
+1. **Generate** — User asks for code (or pastes their own)
+2. **Verify** — Signal independently checks the code for syntax issues, security vulnerabilities, missing error handling, and complexity problems
+3. **Decide** — User sees a clear signal (green/yellow/red), can expand for details, and chooses whether to accept or override
+4. **Learn** — The calibration concept shows how the system would adapt to each user's patterns over time
+
+The deployed version is live at: `https://claude-signal-prototype.vercel.app`
+
+---
+
+## What I Did Myself vs. What AI Did
+
+| What AI Built | What I Did |
 |---|---|
-| **Deck writing** | Professor explicitly forbids AI on the deck. Detection is run. |
-| **Segmentation decision** | Strategic call based on my own survey analysis and judgment. |
-| **5-Why root cause** | I built the chain myself; AI only critiqued it after I drafted it. |
-| **Metrics framework** | I chose ARR as North Star based on my own reasoning about what matters. |
-| **Failure analysis** | I identified the 9 risks myself; AI helped structure the write-up but the thinking was mine. |
+| All the code (frontend + backend) | Designed the product concept, features, and user flow |
+| Fixed bugs when I reported them | Found the bugs by testing every path |
+| Suggested technical approaches | Chose which suggestions to accept or reject |
+| Deployed to Vercel and Render | Defined what success looks like and validated against it |
+| Wrote the analysis engine patterns | Defined what the analyzer should look for and why |
+
+**What I did NOT use AI for:**
+- The 10-slide deck (professor checks for AI)
+- The segmentation and problem analysis
+- The competitive research and case studies
+- The metrics framework and failure analysis
+- Any strategic or product decisions
 
 ---
 
-## How I Used AI Responsibly
+## My Takeaway on Using AI for Prototypes
 
-1. **Prototype only:** Every prompt in this document was for building, iterating, or debugging the deployed prototype.
-2. **I reviewed everything:** No code went live without me reading and understanding it.
-3. **I fixed AI's mistakes:** The two deep audits exist because I didn't blindly trust the first output.
-4. **Cross-validated architecture:** I ran key architecture decisions through both Claude and ChatGPT to catch blind spots.
-5. **Transparent about scope:** This document exists so evaluators can see exactly what AI built and what I built myself.
+AI is an incredibly powerful prototyping partner if you know how to direct it. I couldn't have built this alone — I'm not a developer. But I also couldn't have just said "build me a website" and gotten something useful. The value I added was:
 
----
+1. **Knowing what to build** — the product vision, the user flow, the scenarios
+2. **Knowing what good looks like** — I tested every interaction and rejected things that felt off
+3. **Finding the gaps** — AI generates working code, but it doesn't think about edge cases. I had to actively break things to find what was missing
+4. **Iterating with intent** — each round of fixes was driven by my testing, not random suggestions
 
-*This document is honest about what AI was used for: building and refining the deployed prototype. All strategic thinking, research analysis, problem framing, solution design, metric selection, and deck writing were done independently.*
+The prototype is not perfect. There are bugs I'm sure we haven't found. But it demonstrates the core concept clearly, it's publicly accessible, and it shows that I understand both the product AND how to ship working software. That's what matters for this project.
