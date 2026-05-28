@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Loader2, Terminal, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Send, Loader2, Terminal, AlertCircle, CheckCircle2, Code2 } from 'lucide-react';
+import Editor from '@monaco-editor/react';
 import ChatMessage from '../components/ChatMessage';
-import TypewriterCode from '../components/TypewriterCode';
 import SignalTag from '../components/SignalTag';
 import SignalPanel from '../components/SignalPanel';
 import OverrideButton from '../components/OverrideButton';
@@ -23,6 +23,7 @@ export default function Playground() {
   const [codeDone, setCodeDone] = useState(false);
   const [tagExpanded, setTagExpanded] = useState(false);
   const [overridden, setOverridden] = useState(false);
+  const [showCode, setShowCode] = useState(false);
 
   useEffect(() => {
     checkHealth().then(setBackendOnline);
@@ -39,14 +40,17 @@ export default function Playground() {
     setCodeDone(false);
     setTagExpanded(false);
     setOverridden(false);
+    setShowCode(false);
 
     try {
       const gen = await generateCode(prompt, language);
       setGeneratedCode(gen.code);
       setExplanation(gen.explanation);
+      setShowCode(true);
 
       const analysis = await analyzeCode(gen.code, language);
       setSignal(analysis);
+      setCodeDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -66,21 +70,25 @@ export default function Playground() {
       });
       setOverridden(true);
     } catch {
-      // Silently fail — demo should still work
       setOverridden(true);
     }
   }, [signal, generatedCode, prompt, language]);
 
+  const editorLanguage = language === 'python' ? 'python' : language === 'typescript' ? 'typescript' : 'javascript';
+
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
+    <div className="max-w-5xl mx-auto px-4 py-8">
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        <h1 className="text-xl font-bold text-text-primary mb-1">Live Playground</h1>
+        <h1 className="text-xl font-bold text-text-primary mb-1 flex items-center gap-2">
+          <Code2 className="w-5 h-5 text-accent" />
+          Live Playground
+        </h1>
         <p className="text-sm text-text-secondary">
-          Type a coding prompt. Claude Signal will generate code and run real verification.
+          Type a coding prompt. Claude Signal generates code and runs real verification.
         </p>
         {backendOnline === false && (
           <div className="mt-2 flex items-center gap-2 text-xs text-signal-yellow">
@@ -139,7 +147,7 @@ export default function Playground() {
         </motion.div>
       )}
 
-      {generatedCode && (
+      {showCode && generatedCode && (
         <div className="space-y-6">
           <ChatMessage role="user" delay={0}>
             {prompt}
@@ -148,13 +156,27 @@ export default function Playground() {
           <ChatMessage role="assistant" delay={0.2}>
             <div>
               <p className="mb-2">{explanation}</p>
-              <TypewriterCode
-                key={generatedCode}
-                code={generatedCode}
-                language={language}
-                speed={8}
-                onComplete={() => setCodeDone(true)}
-              />
+              
+              <div className="rounded-lg overflow-hidden border border-code-border my-3">
+                <div className="flex items-center justify-between px-3 py-1.5 bg-code-bg border-b border-code-border">
+                  <span className="text-xs font-medium text-text-muted uppercase tracking-wider">{editorLanguage}</span>
+                </div>
+                <Editor
+                  height="300px"
+                  language={editorLanguage}
+                  value={generatedCode}
+                  theme="vs-dark"
+                  options={{
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    fontSize: 13,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    lineNumbers: 'on',
+                    readOnly: true,
+                    automaticLayout: true,
+                  }}
+                />
+              </div>
 
               {signal && (
                 <>
@@ -185,7 +207,7 @@ export default function Playground() {
         </div>
       )}
 
-      {!generatedCode && !loading && (
+      {!showCode && !loading && (
         <div className="text-center py-16 text-text-muted">
           <Terminal className="w-10 h-10 mx-auto mb-3 opacity-40" />
           <p className="text-sm">Enter a prompt above to generate and analyze code.</p>

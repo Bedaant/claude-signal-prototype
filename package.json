@@ -19,6 +19,7 @@
     "vite": "^8.0.12"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "framer-motion": "^12.40.0",
     "lucide-react": "^1.16.0",
     "react": "^19.2.6",
