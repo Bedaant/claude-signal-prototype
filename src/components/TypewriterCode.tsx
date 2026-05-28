@@ -26,14 +26,16 @@ export default function TypewriterCode({ code, language, speed = 12, onComplete 
     setDisplayed('')
     setDone(false)
     const interval = setInterval(() => {
-      i++
-      if (i > code.length) {
+      if (i >= code.length) {
         clearInterval(interval)
         setDone(true)
         onComplete?.()
         return
       }
-      setDisplayed(code.slice(0, i))
+      // Batch updates: append 3 chars at a time to reduce SyntaxHighlighter re-renders
+      const batch = Math.min(i + 3, code.length)
+      setDisplayed(code.slice(0, batch))
+      i = batch
     }, speed)
     return () => clearInterval(interval)
   }, [code, speed, onComplete])

@@ -7,16 +7,19 @@ import SignalLogo from '../components/SignalLogo';
 
 export default function Calibration() {
   const [profile, setProfile] = useState<any>(null);
-  const [backendOnline, setBackendOnline] = useState(false);
 
   useEffect(() => {
-    checkHealth().then(setBackendOnline);
-    if (backendOnline) {
-      getCalibration(getUserId())
-        .then(data => setProfile(data.profile))
-        .catch(() => setProfile(null));
-    }
-  }, [backendOnline]);
+    let cancelled = false;
+    checkHealth().then(online => {
+      if (cancelled) return;
+      if (online) {
+        getCalibration(getUserId())
+          .then(data => { if (!cancelled) setProfile(data.profile); })
+          .catch(() => { if (!cancelled) setProfile(null); });
+      }
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const container = {
     hidden: {},

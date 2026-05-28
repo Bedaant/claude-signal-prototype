@@ -3,10 +3,17 @@
 export const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export function getUserId(): string {
-  let id = localStorage.getItem('signal_user_id');
-  if (!id) {
-    id = 'user_' + Math.random().toString(36).substring(2, 15);
-    localStorage.setItem('signal_user_id', id);
+  try {
+    let id = localStorage.getItem('signal_user_id');
+    if (!id) {
+      id = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : 'user_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('signal_user_id', id);
+    }
+    return id;
+  } catch {
+    // Fallback for private browsing mode where localStorage throws
+    return 'user_' + Math.random().toString(36).substring(2, 15);
   }
-  return id;
 }

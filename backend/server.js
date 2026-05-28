@@ -8,13 +8,24 @@ const { analyzeCode } = require('./services/analyzer');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Simple in-memory rate limiter
+// Trust proxy headers (Render, Vercel, etc. use reverse proxies)
+app.set('trust proxy', 1);
+
+// Simple in-memory rate limiter with periodic cleanup
 const rateLimits = new Map();
 const RATE_WINDOW_MS = 60000; // 1 minute
 const RATE_MAX_REQUESTS = 20; // 20 requests per minute per IP
 
+// Clean up expired entries every 5 minutes to prevent unbounded memory growth
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of rateLimits) {
+    if (now > entry.resetAt) rateLimits.delete(ip);
+  }
+}, 5 * 60 * 1000);
+
 function rateLimit(req, res, next) {
-  const ip = req.ip || req.connection.remoteAddress || 'unknown';
+  const ip = req.ip || req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.connection.remoteAddress || 'unknown';
   const now = Date.now();
   const entry = rateLimits.get(ip) || { count: 0, resetAt: now + RATE_WINDOW_MS };
 
@@ -57,7 +68,7 @@ app.post('/api/generate', rateLimit, async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error('Generate error:', err.message);
-    res.status(500).json({ error: 'Code generation failed', details: err.message });
+    res.status(500).json({ error: 'Code generation failed. Please try again.' });
   }
 });
 
@@ -83,7 +94,7 @@ app.post('/api/analyze', rateLimit, async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error('Analyze error:', err.message);
-    res.status(500).json({ error: 'Analysis failed', details: err.message });
+    res.status(500).json({ error: 'Analysis failed. Please try again.' });
   }
 });
 

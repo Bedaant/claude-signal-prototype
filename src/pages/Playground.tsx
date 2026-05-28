@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Play, Plus, Trash2, FileCode, Sparkles, Wand2 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
@@ -65,6 +65,44 @@ export default function Playground() {
 
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const decorationsRef = useRef<string[]>([]);
+
+  // Re-apply decorations when editor becomes available (handles mount-after-signal race)
+  const signalRef = useRef(signal);
+  useEffect(() => { signalRef.current = signal; }, [signal]);
+
+  useEffect(() => {
+    if (!editorRef.current) return;
+    const s = signalRef.current;
+    if (!s?.findings || !activeFile) return;
+    // This effect runs when editor mounts, ensuring decorations apply even if signal was already set
+    const fileFindings = s.findings.filter(f => {
+      const activeFileName = files.find(file => file.id === activeFile)?.name;
+      return f.file === activeFileName || f.file === activeFile;
+    });
+    const model = editorRef.current.getModel();
+    if (!model) return;
+    const newDecorations: editor.IModelDeltaDecoration[] = fileFindings.map(f => ({
+      range: {
+        startLineNumber: f.line,
+        startColumn: 1,
+        endLineNumber: f.line,
+        endColumn: model.getLineLength(f.line) + 1,
+      },
+      options: {
+        isWholeLine: true,
+        className: f.severity === 'critical' ? 'bg-signal-red/10' : 'bg-signal-yellow/10',
+        glyphMarginClassName: f.severity === 'critical' ? 'signal-red-gutter' : 'signal-yellow-gutter',
+        hoverMessage: { value: `**${f.severity.toUpperCase()}**: ${f.message}` },
+        overviewRuler: {
+          color: f.severity === 'critical' ? '#ef4444' : '#f5a623',
+          position: 1,
+        },
+      },
+    }));
+    decorationsRef.current = editorRef.current.deltaDecorations([], newDecorations);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // runs once on mount
+
 
   const addLog = useCallback((msg: string) => {
     setTerminalLogs(prev => [...prev.slice(-499), msg]);
@@ -141,6 +179,50 @@ export default function Playground() {
     }
   }, [prompt, loading, language, addLog]);
 
+  // Merge mixed-language analysis results
+  function mergeMixedAnalysis(pyResult: AnalysisResponse | null, jsResult: AnalysisResponse | null): AnalysisResponse {
+    const results = [pyResult, jsResult].filter(Boolean) as AnalysisResponse[];
+    if (results.length === 1) return results[0];
+
+    const mergedChecks: AnalysisResponse['checks'] = [];
+    const allFindings: AnalysisResponse['findings'] = [];
+    const checkIds = [...new Set(results.flatMap(r => r.checks.map(c => c.id)))];
+
+    checkIds.forEach(id => {
+      const allForId = results.flatMap(r => r.checks.filter(c => c.id === id));
+      const hasFail = allForId.some(c => c.status === 'fail');
+      const hasWarn = allForId.some(c => c.status === 'warn');
+      const status = hasFail ? 'fail' as const : hasWarn ? 'warn' as const : 'pass' as const;
+      const first = allForId[0];
+      const allDetail = allForId
+        .filter(c => c.findings && c.findings.length > 0)
+        .flatMap(c => c.findings!.map(f => `${f.file}:${f.line}: ${f.message}`));
+      mergedChecks.push({
+        id, name: first.name, status, icon: first.icon,
+        summary: status === 'fail' ? `${allDetail.length} issue(s) across files` : status === 'warn' ? `${allDetail.length} warning(s) across files` : first.summary,
+        detail: allDetail.length > 0 ? allDetail.join('\n') : first.detail,
+        guidedVerification: first.guidedVerification,
+        findings: allForId.flatMap(c => c.findings || [])
+      });
+    });
+
+    allFindings.push(...mergedChecks.flatMap(c => c.findings || []));
+    const totalFails = mergedChecks.filter(c => c.status === 'fail').length;
+    const totalWarns = mergedChecks.filter(c => c.status === 'warn').length;
+    const level = totalFails > 0 ? 'red' : totalWarns > 0 ? 'yellow' : 'green';
+
+    return {
+      level,
+      label: level === 'green' ? 'High Confidence' : level === 'yellow' ? 'Medium Confidence' : 'Low Confidence',
+      itemCount: totalFails + totalWarns,
+      checks: mergedChecks,
+      findings: allFindings,
+      notChecked: ['Runtime behavior', 'Performance at scale', 'Dependency freshness'],
+      timeSaved: `~${results.length * 2} minutes`,
+      files: results.flatMap(r => r.files || [])
+    };
+  }
+
   // Analyze all files
   const handleAnalyze = useCallback(async () => {
     if (files.length === 0) return;
@@ -152,8 +234,31 @@ export default function Playground() {
     addLog(`> Analyzing ${files.length} file(s)...`);
 
     try {
-      const filesToAnalyze = files.map(f => ({ name: f.name, content: f.content }));
-      const analysis = await analyzeFiles(filesToAnalyze, language);
+      // Detect language per-file from extension, fall back to global language
+      const detectLang = (name: string, fallback: string) => {
+        if (name.endsWith('.py')) return 'python';
+        if (name.endsWith('.js') || name.endsWith('.jsx')) return 'javascript';
+        if (name.endsWith('.ts') || name.endsWith('.tsx')) return 'typescript';
+        return fallback;
+      };
+      const filesToAnalyze = files.map(f => ({ name: f.name, content: f.content, language: detectLang(f.name, language) }));
+      // For the multi-file endpoint we still pass a top-level language hint, but if backend
+      // supports per-file language it can use the name. For now we analyze individually by
+      // language bucket and merge client-side to ensure correct rules per file.
+      const pyFiles = filesToAnalyze.filter(f => f.language === 'python');
+      const jsFiles = filesToAnalyze.filter(f => f.language === 'javascript' || f.language === 'typescript');
+      let analysis: AnalysisResponse;
+      if (pyFiles.length > 0 && jsFiles.length > 0) {
+        // Mixed language: analyze each bucket separately and merge
+        const [pyResult, jsResult] = await Promise.all([
+          pyFiles.length > 0 ? analyzeFiles(pyFiles, 'python') : Promise.resolve(null as any),
+          jsFiles.length > 0 ? analyzeFiles(jsFiles, 'javascript') : Promise.resolve(null as any),
+        ]);
+        analysis = mergeMixedAnalysis(pyResult, jsResult);
+      } else {
+        const targetLang = pyFiles.length > 0 ? 'python' : 'javascript';
+        analysis = await analyzeFiles(filesToAnalyze, targetLang);
+      }
       setSignal(analysis);
 
       analysis.checks.forEach(check => {
@@ -260,11 +365,29 @@ export default function Playground() {
     }
   }, [files]);
 
+  useEffect(() => {
+    return () => {
+      if (selectTimeoutRef.current) clearTimeout(selectTimeoutRef.current);
+    };
+  }, []);
+
   const activeFileData = files.find(f => f.id === activeFile);
   const editorLanguage = activeFileData?.language === 'python' ? 'python' :
     activeFileData?.language === 'typescript' ? 'typescript' :
     activeFileData?.language === 'json' ? 'json' :
     activeFileData?.language === 'plaintext' ? 'plaintext' : 'javascript';
+
+  const editorOptions = useMemo(() => ({
+    minimap: { enabled: true, scale: 1 },
+    scrollBeyondLastLine: false,
+    fontSize: 13,
+    fontFamily: "'JetBrains Mono', monospace",
+    lineNumbers: 'on' as const,
+    readOnly: false,
+    automaticLayout: true,
+    padding: { top: 8 },
+    glyphMargin: true,
+  }), []);
 
   return (
     <div className="h-[calc(100vh-3.5rem)] flex flex-col">
@@ -465,17 +588,7 @@ export default function Playground() {
                 theme="vs-dark"
                 onChange={handleFileChange}
                 onMount={editor => { editorRef.current = editor; }}
-                options={{
-                  minimap: { enabled: true, scale: 1 },
-                  scrollBeyondLastLine: false,
-                  fontSize: 13,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  lineNumbers: 'on',
-                  readOnly: false,
-                  automaticLayout: true,
-                  padding: { top: 8 },
-                  glyphMargin: true,
-                }}
+                options={editorOptions}
               />
             </div>
 

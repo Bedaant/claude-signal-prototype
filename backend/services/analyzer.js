@@ -100,7 +100,7 @@ const commonFixes = {
 
 // ==================== JAVASCRIPT/TYPESCRIPT ANALYSIS ====================
 
-function analyzeJavaScript(code, filename = 'main.js') {
+async function analyzeJavaScript(code, filename = 'main.js', allFiles = []) {
   if (typeof code !== 'string') code = String(code || '');
   const checks = [];
   const findings = [];
@@ -241,6 +241,51 @@ function analyzeJavaScript(code, filename = 'main.js') {
     checks.push({ id: 'complexity', name: 'Code Complexity', status: 'pass', icon: 'GitBranch', summary: `Complexity: ${complexity} (acceptable).`, detail: 'Code structure is reasonably simple.' });
   }
 
+  // Dependency + OSV CVE check
+  const pkgJson = allFiles.find(f => f.name === 'package.json');
+  let cveFindings = [];
+  const detectedPkgs = [];
+  if (/import\s+axios|require\s*\(\s*['"]axios['"]\s*\)/.test(code)) detectedPkgs.push('axios');
+  if (/import\s+express|require\s*\(\s*['"]express['"]\s*\)/.test(code)) detectedPkgs.push('express');
+  if (/import\s+lodash|require\s*\(\s*['"]lodash['"]\s*\)/.test(code)) detectedPkgs.push('lodash');
+
+  for (const pkg of detectedPkgs) {
+    let version = null;
+    if (pkgJson) {
+      try {
+        const parsed = JSON.parse(pkgJson.content);
+        const depVersion = parsed.dependencies?.[pkg] || parsed.devDependencies?.[pkg];
+        if (depVersion) version = depVersion.replace(/^[^0-9]*/, '');
+      } catch { /* ignore parse errors */ }
+    }
+    const vulns = await checkOSV(pkg, 'npm', version);
+    if (vulns.length > 0) {
+      const topVulns = vulns.slice(0, 3);
+      topVulns.forEach(v => {
+        cveFindings.push({
+          line: 1, file: filename,
+          message: `${pkg}${version ? '@' + version : ''}: ${v.id} — ${v.summary || 'CVE found'}`,
+          severity: (v.severity?.[0]?.score > 7 || v.database_specific?.severity === 'HIGH') ? 'critical' : 'warn',
+          code: `import ${pkg}`,
+          fix: { title: 'Update dependency', before: `${pkg}${version ? '@' + version : ''}`, after: `${pkg}@latest` }
+        });
+      });
+    }
+  }
+
+  if (cveFindings.length > 0) {
+    findings.push(...cveFindings);
+    checks.push({
+      id: 'deps', name: 'Dependencies', status: 'warn', icon: 'ShieldAlert',
+      summary: `${cveFindings.length} CVE(s) found in dependencies.`,
+      detail: cveFindings.map(f => f.message).join('\n'),
+      guidedVerification: 'Update dependencies to the latest secure versions.',
+      findings: cveFindings
+    });
+  } else {
+    checks.push({ id: 'deps', name: 'Dependencies', status: 'pass', icon: 'Package', summary: 'No known CVEs in detected dependencies.', detail: 'OSV scan completed with no critical findings.' });
+  }
+
   checks.push({ id: 'tests', name: 'Auto-Generated Tests', status: 'warn', icon: 'FlaskConical', summary: 'Test execution requires sandbox.', detail: 'Static analysis only. Runtime tests not available.' });
 
   const failCount = checks.filter(c => c.status === 'fail').length;
@@ -252,7 +297,7 @@ function analyzeJavaScript(code, filename = 'main.js') {
 
 // ==================== PYTHON ANALYSIS ====================
 
-function analyzePython(code, filename = 'main.py') {
+async function analyzePython(code, filename = 'main.py', allFiles = []) {
   if (typeof code !== 'string') code = String(code || '');
   const checks = [];
   const findings = [];
@@ -281,10 +326,10 @@ function analyzePython(code, filename = 'main.py') {
     { pattern: /exec\s*\(/, message: 'exec() — arbitrary code execution', fix: commonFixes.evalExec, severity: 'critical' },
     { pattern: /eval\s*\(/, message: 'eval() — code injection risk', fix: commonFixes.evalExec, severity: 'critical' },
     { pattern: /password\s*=\s*["']/, message: 'Hardcoded password detected', fix: commonFixes.hardcodedSecret, severity: 'critical' },
-    { pattern: /api_key\s*=\s*["']/, message: 'Hardcoded API key detected', fix: commonFixes.hardcodedSecret, severity: 'critical' },
+    { pattern: /api_key\s*=\s*["']/, cond: (_c, line) => !/os\.environ|os\.getenv|dotenv/.test(line), message: 'Hardcoded API key detected', fix: commonFixes.hardcodedSecret, severity: 'critical' },
     { pattern: /secret\s*=\s*["']/, message: 'Hardcoded secret detected', fix: commonFixes.hardcodedSecret, severity: 'critical' },
     { pattern: /auth_token\s*=\s*["']/, message: 'Hardcoded auth token detected', fix: commonFixes.hardcodedSecret, severity: 'critical' },
-    { pattern: /requests\.get\s*\(/, cond: c => !/timeout/.test(c), message: 'HTTP request without timeout', fix: commonFixes.noTimeout, severity: 'warn' },
+    { pattern: /requests\.get\s*\(/, cond: (c, line) => !/timeout\s*=/.test(line), message: 'HTTP request without timeout', fix: commonFixes.noTimeout, severity: 'warn' },
     { pattern: /verify\s*=\s*False/, message: 'SSL verification disabled — MITM vulnerability', fix: null, severity: 'warn' },
     { pattern: /open\s*\(/, cond: c => !/with\s+open/.test(c), message: 'File opened without context manager', fix: null, severity: 'warn' },
     { pattern: /pickle\./, message: 'pickle used — arbitrary code execution on untrusted data', fix: commonFixes.pickleLoad, severity: 'critical' },
@@ -297,9 +342,10 @@ function analyzePython(code, filename = 'main.py') {
 
   const securityIssues = [];
   securityPatterns.forEach(({ pattern, cond, message, fix, severity }) => {
-    if (cond && !cond(code)) return;
     const lines = getLineNumbers(code, pattern);
     lines.forEach(line => {
+      const lineContent = getLineContent(code, line);
+      if (cond && !cond(code, lineContent)) return;
       const content = getLineContent(code, line);
       const issue = { line, file: filename, message, severity, code: content };
       if (fix) { issue.fix = fix; issue.fix.line = line; }
@@ -348,13 +394,50 @@ function analyzePython(code, filename = 'main.py') {
     checks.push({ id: 'errors', name: 'Error Handling', status: 'pass', icon: 'CheckCircle', summary: 'Exception handling present.', detail: hasTry ? 'try/except detected.' : 'No risky I/O operations.' });
   }
 
-  // Dependencies
-  if (/import\s+requests/.test(code)) {
-    checks.push({ id: 'deps', name: 'Dependencies', status: 'pass', icon: 'Package', summary: 'requests library detected.', detail: 'requests is widely used. CVE check will run via OSV.' });
-  } else if (/import\s+flask|from\s+flask/.test(code)) {
-    checks.push({ id: 'deps', name: 'Dependencies', status: 'pass', icon: 'Package', summary: 'Flask framework detected.', detail: 'Ensure Flask is updated to latest for security patches.' });
+  // Dependencies + OSV CVE check
+  const reqFile = allFiles.find(f => f.name === 'requirements.txt');
+  let cveFindings = [];
+  const detectedPkgs = [];
+  if (/import\s+requests/.test(code)) detectedPkgs.push('requests');
+  if (/import\s+flask|from\s+flask/.test(code)) detectedPkgs.push('flask');
+  if (/import\s+django/.test(code)) detectedPkgs.push('django');
+
+  for (const pkg of detectedPkgs) {
+    let version = null;
+    if (reqFile) {
+      const match = reqFile.content.match(new RegExp(`${pkg}>=?([0-9][^\\s]*)`, 'i'));
+      if (match) version = match[1].trim();
+    }
+    const vulns = await checkOSV(pkg, 'PyPI', version);
+    if (vulns.length > 0) {
+      const topVulns = vulns.slice(0, 3);
+      topVulns.forEach(v => {
+        cveFindings.push({
+          line: 1, file: filename,
+          message: `${pkg}${version ? '@' + version : ''}: ${v.id} — ${v.summary || 'CVE found'}`,
+          severity: (v.severity?.[0]?.score > 7 || v.database_specific?.severity === 'HIGH') ? 'critical' : 'warn',
+          code: `import ${pkg}`,
+          fix: { title: 'Update dependency', before: `${pkg}${version ? '==' + version : ''}`, after: `${pkg}>=latest` }
+        });
+      });
+    }
+  }
+
+  if (cveFindings.length > 0) {
+    findings.push(...cveFindings);
+    checks.push({
+      id: 'deps', name: 'Dependencies', status: 'warn', icon: 'ShieldAlert',
+      summary: `${cveFindings.length} CVE(s) found in dependencies.`,
+      detail: cveFindings.map(f => f.message).join('\n'),
+      guidedVerification: 'Update dependencies: pip install --upgrade <package>',
+      findings: cveFindings
+    });
   } else {
-    checks.push({ id: 'deps', name: 'Dependencies', status: 'pass', icon: 'Package', summary: 'Standard library only.', detail: 'No external dependencies — no CVE exposure.' });
+    if (detectedPkgs.length > 0) {
+      checks.push({ id: 'deps', name: 'Dependencies', status: 'pass', icon: 'Package', summary: `${detectedPkgs.join(', ')} detected. No known CVEs.`, detail: 'OSV scan completed with no critical findings.' });
+    } else {
+      checks.push({ id: 'deps', name: 'Dependencies', status: 'pass', icon: 'Package', summary: 'Standard library only.', detail: 'No external dependencies — no CVE exposure.' });
+    }
   }
 
   // Complexity
@@ -378,9 +461,11 @@ function analyzePython(code, filename = 'main.py') {
 
 // ==================== OSV CVE LOOKUP ====================
 
-async function checkOSV(packageName, ecosystem) {
+async function checkOSV(packageName, ecosystem, version = null) {
   try {
-    const response = await axios.post('https://api.osv.dev/v1/query', { package: { name: packageName, ecosystem } }, { timeout: 5000 });
+    const body = { package: { name: packageName, ecosystem } };
+    if (version) body.version = version;
+    const response = await axios.post('https://api.osv.dev/v1/query', body, { timeout: 5000 });
     return response.data.vulns || [];
   } catch (err) { return []; }
 }
@@ -393,8 +478,8 @@ async function analyzeFiles(files, language) {
 
   for (const file of files) {
     const result = language === 'javascript' || language === 'typescript' || language === 'js' || language === 'ts'
-      ? analyzeJavaScript(file.content, file.name)
-      : analyzePython(file.content, file.name);
+      ? await analyzeJavaScript(file.content, file.name, files)
+      : await analyzePython(file.content, file.name, files);
     allResults.push({ ...result, filename: file.name });
     allFindings.push(...result.findings.map(f => ({ ...f, file: file.name })));
   }
@@ -487,9 +572,9 @@ async function analyzeCode(codeOrFiles, language) {
     return analyzeFiles(codeOrFiles, language);
   }
   if (language === 'javascript' || language === 'typescript' || language === 'js' || language === 'ts') {
-    return analyzeJavaScript(codeOrFiles);
+    return analyzeJavaScript(codeOrFiles, 'main.js', [{ name: 'main.js', content: codeOrFiles }]);
   }
-  return analyzePython(codeOrFiles);
+  return analyzePython(codeOrFiles, 'main.py', [{ name: 'main.py', content: codeOrFiles }]);
 }
 
 module.exports = { analyzeCode, checkOSV };
