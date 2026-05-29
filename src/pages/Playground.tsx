@@ -536,7 +536,7 @@ export default function Playground() {
       )}
 
       {/* IDE Layout */}
-      {showIDE ? (
+      {showIDE || mode === 'paste' ? (
         <div className="flex-1 flex overflow-hidden">
           {/* Sidebar: File Explorer */}
           <div className="w-48 flex-shrink-0 hidden sm:flex flex-col border-r border-border-subtle">
@@ -637,7 +637,7 @@ export default function Playground() {
                 Try a Sample Project
               </button>
               <button
-                onClick={() => setMode('paste')}
+                onClick={() => handleSetMode('paste')}
                 className="px-4 py-2 rounded-lg border border-border-subtle text-text-secondary text-sm hover:border-border-hover hover:text-text-primary transition-colors"
               >
                 Paste Your Code
