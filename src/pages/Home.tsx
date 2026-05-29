@@ -2,15 +2,17 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Zap,
-  Eye,
   Brain,
   ArrowRight,
   Code2,
   Search,
-  TrendingUp,
-  ShieldCheck,
-  Radio,
   ChevronRight,
+  Lock,
+  Bug,
+  Timer,
+  Puzzle,
+  Monitor,
+  Plug,
 } from 'lucide-react'
 import SignalLogo from '../components/SignalLogo'
 
@@ -24,17 +26,17 @@ const steps = [
   {
     icon: Code2,
     title: 'Generate',
-    desc: 'Claude writes code from your prompt in the IDE',
+    desc: 'You ask Claude, Cursor, or Copilot for code. The AI writes it — polished, confident, and often almost right.',
   },
   {
     icon: Search,
     title: 'Verify',
-    desc: 'Signal runs independent static analysis + CVE checks',
+    desc: 'Signal runs independent checks in under 3 seconds — static analysis, CVE lookups, security patterns. Not Claude checking itself.',
   },
   {
     icon: Brain,
     title: 'Calibrate',
-    desc: 'Override feedback trains your judgment over time',
+    desc: 'When you override a warning, Signal remembers. Over time it learns where you need more signal and where you need less — building your judgment, not tool dependence.',
   },
 ]
 
@@ -68,26 +70,47 @@ const demos = [
   },
 ]
 
-const pillars = [
+const checks = [
   {
-    icon: Eye,
-    title: 'Output Quality',
-    desc: 'Static analysis, CVE checks, complexity scoring, and auto-generated test stubs',
+    icon: Lock,
+    title: 'Security Patterns',
+    desc: 'SQL injection, hardcoded secrets, unsafe eval/exec, missing auth, insecure HTTP',
   },
   {
-    icon: ShieldCheck,
-    title: 'Soft Gate',
-    desc: 'Recommends, never blocks. You always decide whether to accept or override',
+    icon: Bug,
+    title: 'CVE Database',
+    desc: 'Dependency versions checked against real OSV vulnerability database',
   },
   {
-    icon: TrendingUp,
-    title: 'Calibration',
-    desc: 'Override feedback loop builds your risk intuition over time',
+    icon: Timer,
+    title: 'Resource Leaks',
+    desc: 'Unclosed files, missing timeouts, debug mode left on, pickle on untrusted data',
   },
   {
-    icon: Radio,
-    title: 'Legibility',
-    desc: 'Progressive disclosure — tag → summary → full reasoning on demand',
+    icon: Puzzle,
+    title: 'Cross-File Analysis',
+    desc: 'API keys defined in config.py and used in app.py — issues that span files',
+  },
+]
+
+const distribution = [
+  {
+    icon: Monitor,
+    title: 'Claude.ai',
+    status: 'Now',
+    desc: 'Built into the Claude web experience. Signal runs inline as code generates.',
+  },
+  {
+    icon: Code2,
+    title: 'IDE Extensions',
+    status: 'Now',
+    desc: 'Cursor, VS Code, JetBrains — Signal checks code where developers actually write it.',
+  },
+  {
+    icon: Plug,
+    title: 'MCP Server',
+    status: 'Future',
+    desc: 'Any AI tool can call Signal via Model Context Protocol. Portable verification layer.',
   },
 ]
 
@@ -254,6 +277,49 @@ export default function Home() {
               </motion.div>
             ))}
           </motion.div>
+
+          {/* Signal Output Preview */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="mt-6 rounded-xl border border-border-subtle bg-code-bg overflow-hidden"
+          >
+            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border-subtle bg-surface/50">
+              <div className="flex gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-signal-red/60" />
+                <span className="w-2.5 h-2.5 rounded-full bg-signal-yellow/60" />
+                <span className="w-2.5 h-2.5 rounded-full bg-signal-green/60" />
+              </div>
+              <span className="text-[11px] text-text-dim ml-1">Signal Analysis</span>
+            </div>
+            <div className="p-4 text-[13px] leading-relaxed">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-signal-yellow/15 text-signal-yellow border border-signal-yellow/20">
+                  Medium Confidence
+                </span>
+                <span className="text-text-dim">2 items need attention</span>
+              </div>
+              <div className="space-y-2 text-text-muted">
+                <p className="flex items-start gap-2">
+                  <span className="text-signal-red mt-0.5">●</span>
+                  <span><span className="text-text-secondary">untitled.py:31</span> — f-string used in SQL query. SQL injection risk.</span>
+                </p>
+                <p className="flex items-start gap-2">
+                  <span className="text-signal-yellow mt-0.5">●</span>
+                  <span><span className="text-text-secondary">untitled.py:71</span> — HTTP request without timeout. Can hang indefinitely.</span>
+                </p>
+                <p className="flex items-start gap-2">
+                  <span className="text-signal-green mt-0.5">●</span>
+                  <span><span className="text-text-secondary">untitled.py:45</span> — Input validation present. ✓</span>
+                </p>
+              </div>
+              <div className="mt-3 pt-3 border-t border-border-subtle text-[11px] text-text-dim">
+                💡 Signal checked: syntax, security patterns, CVE database. Not checked: cost at scale, compliance requirements.
+              </div>
+            </div>
+          </motion.div>
         </section>
 
         {/* Live Demos */}
@@ -307,7 +373,7 @@ export default function Home() {
           </motion.div>
         </section>
 
-        {/* Four Pillars */}
+        {/* What Signal Catches */}
         <section className="py-20">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -317,13 +383,13 @@ export default function Home() {
             className="text-center mb-12"
           >
             <p className="text-[11px] font-semibold text-accent uppercase tracking-widest mb-3">
-              Four Pillars
+              What Signal Catches
             </p>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary mb-2">
-              Built for real-world judgment
+              Independent checks, real findings
             </h2>
             <p className="text-sm text-text-muted">
-              Addressing the core problem from every angle
+              Not Claude evaluating itself — external tools with no shared blind spots
             </p>
           </motion.div>
 
@@ -334,20 +400,76 @@ export default function Home() {
             viewport={{ once: true, margin: '-50px' }}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
           >
-            {pillars.map((p) => (
+            {checks.map((c) => (
               <motion.div
-                key={p.title}
+                key={c.title}
                 variants={item}
                 className="rounded-xl p-5 bg-surface border border-border-subtle hover:border-border-hover transition-colors"
               >
                 <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-accent-dim border border-accent/15 mb-4">
-                  <p.icon className="w-4 h-4 text-accent" />
+                  <c.icon className="w-4 h-4 text-accent" />
                 </div>
                 <h3 className="text-sm font-semibold text-text-primary mb-1.5">
-                  {p.title}
+                  {c.title}
                 </h3>
                 <p className="text-[13px] text-text-muted leading-relaxed">
-                  {p.desc}
+                  {c.desc}
+                </p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </section>
+
+        {/* Distribution */}
+        <section className="py-20">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-12"
+          >
+            <p className="text-[11px] font-semibold text-accent uppercase tracking-widest mb-3">
+              Where Signal Lives
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary mb-2">
+              Verification where you need it
+            </h2>
+            <p className="text-sm text-text-muted">
+              Starting where developers accept code — expanding to any AI tool
+            </p>
+          </motion.div>
+
+          <motion.div
+            variants={container}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: '-50px' }}
+            className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+          >
+            {distribution.map((d) => (
+              <motion.div
+                key={d.title}
+                variants={item}
+                className="relative rounded-xl p-6 bg-surface border border-border-subtle hover:border-border-hover transition-colors"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-accent-dim border border-accent/15">
+                    <d.icon className="w-4 h-4 text-accent" />
+                  </div>
+                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                    d.status === 'Now'
+                      ? 'bg-signal-green/15 text-signal-green'
+                      : 'bg-accent/10 text-accent'
+                  }`}>
+                    {d.status}
+                  </span>
+                </div>
+                <h3 className="text-sm font-semibold text-text-primary mb-1.5">
+                  {d.title}
+                </h3>
+                <p className="text-[13px] text-text-muted leading-relaxed">
+                  {d.desc}
                 </p>
               </motion.div>
             ))}
