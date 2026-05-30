@@ -18,6 +18,23 @@ export interface SignalResult {
   checks: SignalCheck[];
   notChecked: string[];
   timeSaved: string;
+  reasoning?: {
+    goal: string;
+    approach: string;
+    assumptions: Array<{
+      id: string;
+      type: string;
+      category: string;
+      assumption: string;
+      confidence: 'high' | 'medium' | 'low';
+      inferredFrom: string;
+      line?: number;
+      file?: string;
+      status?: 'pending' | 'confirmed' | 'overridden';
+    }>;
+    assumptionCount: number;
+    breakdown: { critical: number; medium: number; high: number };
+  };
 }
 
 export interface Scenario {

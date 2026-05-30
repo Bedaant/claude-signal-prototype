@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Target, Route, AlertTriangle, ShieldCheck } from 'lucide-react'
 import ChatMessage from '../components/ChatMessage'
 import TypewriterCode from '../components/TypewriterCode'
 import SignalTag from '../components/SignalTag'
@@ -111,6 +112,68 @@ export default function Demo() {
               notChecked={scenario.signal.notChecked}
               isVisible={tagExpanded}
             />
+
+            {/* Assumptions Preview */}
+            <AnimatePresence>
+              {tagExpanded && scenario.signal.reasoning && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-4 space-y-3 overflow-hidden"
+                >
+                  <div className="border border-border-subtle rounded-xl bg-surface/50 p-4 space-y-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-accent mb-2">Detected Assumptions</p>
+                    
+                    <div className="flex items-start gap-2">
+                      <Target size={14} className="text-signal-coral mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-[10px] text-text-dim uppercase tracking-wider">Goal</p>
+                        <p className="text-xs text-text-primary">{scenario.signal.reasoning.goal}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-2">
+                      <Route size={14} className="text-signal-yellow mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-[10px] text-text-dim uppercase tracking-wider">Approach</p>
+                        <p className="text-xs text-text-primary">{scenario.signal.reasoning.approach}</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 pt-1">
+                      {scenario.signal.reasoning.assumptions.map((a) => (
+                        <div key={a.id} className="flex items-start gap-2 text-xs">
+                          {a.confidence === 'low' ? (
+                            <AlertTriangle size={12} className="text-signal-red mt-0.5 flex-shrink-0" />
+                          ) : a.confidence === 'medium' ? (
+                            <AlertTriangle size={12} className="text-signal-yellow mt-0.5 flex-shrink-0" />
+                          ) : (
+                            <ShieldCheck size={12} className="text-signal-green mt-0.5 flex-shrink-0" />
+                          )}
+                          <div className="flex-1">
+                            <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold mr-1.5 ${
+                              a.confidence === 'low' ? 'bg-signal-red/20 text-signal-red' :
+                              a.confidence === 'medium' ? 'bg-signal-yellow/20 text-signal-yellow' :
+                              'bg-signal-green/20 text-signal-green'
+                            }`}>
+                              {a.type.replace(/_/g, ' ')}
+                            </span>
+                            <span className="text-text-secondary">{a.assumption}</span>
+                            {a.status === 'overridden' && (
+                              <span className="ml-1.5 text-[10px] text-signal-coral font-semibold">overridden</span>
+                            )}
+                            {a.status === 'confirmed' && (
+                              <span className="ml-1.5 text-[10px] text-signal-green font-semibold">confirmed</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <OverrideButton
               onOverride={() => setOverridden(true)}

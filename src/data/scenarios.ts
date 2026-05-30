@@ -37,6 +37,16 @@ def validate_email(email: str) -> bool:
       ],
       notChecked: ['Business logic correctness', 'RFC 5322 full compliance'],
       timeSaved: '~2 minutes',
+      reasoning: {
+        goal: 'Build a data validation utility',
+        approach: 'Use Python standard library regex for pattern matching',
+        assumptions: [
+          { id: 'assum-1', type: 'input_validation', category: 'security', assumption: 'Input is always a string or None', confidence: 'high', inferredFrom: 'isinstance check on line 21', line: 21, status: 'confirmed' },
+          { id: 'assum-2', type: 'regex_coverage', category: 'reliability', assumption: 'Regex pattern covers all valid email formats', confidence: 'medium', inferredFrom: 'Pattern on line 24', line: 24, status: 'pending' },
+        ],
+        assumptionCount: 2,
+        breakdown: { critical: 0, medium: 1, high: 1 },
+      }
     }
   },
   {
@@ -75,6 +85,17 @@ def fetch_user_data(user_id: int) -> dict:
       ],
       notChecked: ['Rate limiting', 'API timeout behavior', 'Cost implications of API calls', 'API_KEY security (hardcoded vs environment variable)'],
       timeSaved: '~4 minutes',
+      reasoning: {
+        goal: 'Build a REST API client',
+        approach: 'Use requests library for HTTP calls',
+        assumptions: [
+          { id: 'assum-1', type: 'network_reliability', category: 'reliability', assumption: 'API is always reachable and returns 200 OK', confidence: 'low', inferredFrom: 'No timeout, no retry, no status check on line 62', line: 62, status: 'pending' },
+          { id: 'assum-2', type: 'response_format', category: 'reliability', assumption: 'Response body is always valid JSON', confidence: 'medium', inferredFrom: 'Direct .json() call without checking status', line: 63, status: 'pending' },
+          { id: 'assum-3', type: 'dependency_safety', category: 'security', assumption: 'requests 2.28.1 has no known vulnerabilities', confidence: 'low', inferredFrom: 'Using requests without version pinning', line: 50, status: 'overridden' },
+        ],
+        assumptionCount: 3,
+        breakdown: { critical: 2, medium: 1, high: 0 },
+      }
     }
   },
   {
@@ -116,6 +137,18 @@ def search_users():
       ],
       notChecked: ['Deployment configuration', 'CORS settings', 'Rate limiting capacity'],
       timeSaved: '~8 minutes',
+      reasoning: {
+        goal: 'Build a user search endpoint',
+        approach: 'Use Flask with SQLite for simple database queries',
+        assumptions: [
+          { id: 'assum-1', type: 'input_safety', category: 'security', assumption: 'User input (name) is safe to interpolate into SQL', confidence: 'low', inferredFrom: 'f-string SQL on line 97', line: 97, status: 'pending' },
+          { id: 'assum-2', type: 'data_exposure', category: 'security', assumption: 'Returning raw SQL query to client is acceptable', confidence: 'low', inferredFrom: 'jsonify includes query on line 103', line: 103, status: 'pending' },
+          { id: 'assum-3', type: 'auth_not_needed', category: 'security', assumption: 'Search endpoint does not require authentication', confidence: 'low', inferredFrom: 'No auth decorator on line 91', line: 91, status: 'pending' },
+          { id: 'assum-4', type: 'resource_cleanup', category: 'reliability', assumption: 'Database connection will always be closed', confidence: 'medium', inferredFrom: 'conn.close() on line 101 but no try/finally', line: 101, status: 'pending' },
+        ],
+        assumptionCount: 4,
+        breakdown: { critical: 3, medium: 1, high: 0 },
+      }
     }
   },
 ];
