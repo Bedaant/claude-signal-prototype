@@ -235,6 +235,32 @@ I suspected deeper bugs hiding — the kind that only surface under specific tim
 
 ---
 
+## Step 10: The Assumption Registry
+
+The brief's fourth pillar is "Making AI reasoning more legible" — users need to see what assumptions were made, not just whether the output is "good" or "bad." I realized the existing prototype only showed findings (what's wrong) but never surfaced the invisible reasoning behind the code (what the AI assumed).
+
+**My prompt:**
+
+> I need to add an "Assumption Registry" to the Playground. When Signal analyzes code, it should infer:
+> 1. What the code is trying to accomplish (the Goal) — from imports, function names, route decorators
+> 2. How it's trying to do it (the Approach) — from implementation patterns
+> 3. What assumptions underlie each finding — with confidence levels
+>
+> Display this in a dedicated panel next to the findings. Each assumption should show:
+> - Type badge (input_validation, network_reliability, dependency_safety, etc.)
+> - Confidence level (high/medium/low) with color coding
+> - The exact assumption text
+> - What code line it was inferred from
+> - Confirm button ("I checked this, it's fine") and Override button ("This assumption is wrong")
+>
+> When a user overrides, add an inline comment to the code at that line so the rationale is visible in code review.
+
+**What came back:** A tabbed right panel with "Findings" and "Assumptions" tabs. Goal and Approach cards at the top. Assumption cards grouped by status (pending/confirmed/overridden). Confidence badges make low-confidence assumptions instantly visible — the "almost right" problem literally glows yellow or red. Override adds a `// NOTE: [assumption] assumed by user [Signal]` comment directly into the Monaco editor.
+
+**What I added:** Mapped the demo scenarios to include realistic assumptions so the feature shows up in all three demos, not just the Playground.
+
+---
+
 ## Summary: What the Prototype Demonstrates
 
 The deployed prototype at `https://claude-signal-prototype.vercel.app` shows the complete Claude Signal experience:
@@ -242,8 +268,9 @@ The deployed prototype at `https://claude-signal-prototype.vercel.app` shows the
 1. **Landing page** — explains the problem with real data, shows how Signal works, links to demos
 2. **Three demo scenarios** — clean, risky, and unsafe code, each showing how Signal surfaces different levels of concern
 3. **Playground** — users can paste real code or load sample projects and see live analysis with line-level findings
-4. **Calibration demo** — shows how the system adapts to user patterns over 50+ interactions
-5. **About page** — research methodology and project context
+4. **Assumption Registry** — inferred Goal/Approach and structured assumptions with confirm/override, surfacing invisible AI reasoning
+5. **Calibration demo** — shows how the system adapts to user patterns over 50+ interactions
+6. **About page** — research methodology and project context
 
 ---
 
@@ -266,6 +293,6 @@ The deployed prototype at `https://claude-signal-prototype.vercel.app` shows the
 
 I couldn't have built this without AI — I'm not a developer. But I also couldn't have just said "build me a website" and gotten something useful. The value I added as a PM was knowing what to build, knowing what good looks like, finding the gaps, and iterating with intent.
 
-That said, there are still things that bug me. The free-tier Render backend means 30-second cold starts, which is a terrible first impression. The analysis engine is pattern-based, not a real static analyzer — it catches obvious issues but would miss subtle ones. The calibration engine in the prototype is simulated, not real — actual calibration would need weeks of user data. 
+That said, there are still things that bug me. The free-tier Render backend means 30-second cold starts, which is a terrible first impression. The analysis engine is pattern-based, not a real static analyzer — it catches obvious issues but would miss subtle ones. The calibration engine in the prototype is simulated, not real — actual calibration would need weeks of user data. The Assumption Registry's inference is heuristic-based (regex over code) rather than true AST analysis — a real implementation would use language servers or tree-sitters for accuracy. 
 
 The prototype isn't perfect. But it demonstrates the core concept clearly, it's publicly accessible, and it proves I can translate product thinking into working software. That's what this project was meant to show.

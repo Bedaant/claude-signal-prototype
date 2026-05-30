@@ -461,6 +461,25 @@ GUIDED VERIFICATION (for what Signal can't auto-check):
 └─ 💡 "This code makes external API calls. Consider: rate limits, timeout handling, retry logic."
 ```
 
+### The Assumption Registry (Pillar 4 — Reasoning Legibility)
+
+The most invisible risk in AI-generated code isn't what the code *does* — it's what the AI *assumed* when writing it. Signal infers these assumptions and surfaces them as a registry the user can confirm, override, or investigate.
+
+**How it works:**
+1. **Goal inference** — Signal analyzes imports, function names, and route decorators to detect what the code is trying to accomplish (e.g., "Build a secure authentication endpoint")
+2. **Approach inference** — Signal detects implementation patterns (e.g., "Use bcrypt for password hashing and JWT for stateless session tokens")
+3. **Assumption mapping** — Every finding is mapped to an explicit assumption with confidence level:
+   - *High confidence*: Input validation is present (code shows isinstance checks)
+   - *Medium confidence*: Regex covers all valid formats (pattern exists but edge cases untested)
+   - *Low confidence*: API is always reachable (no timeout, no retry logic)
+4. **User action** — Users can confirm an assumption (Signal remembers and reduces noise) or override it (Signal adds an inline comment noting the override, for code review visibility)
+
+**Why this matters:**
+- Transforms implicit AI reasoning into explicit, inspectable claims
+- Makes "almost right" visible — low-confidence assumptions are where subtle bugs hide
+- Builds judgment by teaching users to ask "what did the AI assume here?" instead of "is this code correct?"
+- Override with inline comments creates an audit trail for teams — when someone dismisses a warning, the rationale is right there in the code
+
 ### The calibration engine (the moat)
 
 This is what makes Claude Signal fundamentally different from a linting tool.
@@ -836,7 +855,8 @@ A **deployed, interactive UI demonstration** of Claude Signal showing the soft v
    - **Scenario C: Red signal** — high risk (multiple issues, unsafe patterns). Shows guided verification prompts.
 4. **Override interaction** — user can click Override & Accept, sees feedback loop note and calibration preview
 5. **Progressive disclosure** — click to expand dimensions, click again for full reasoning, click for guided verification
-6. **Calibration preview** — shows what a returning user would see after 20 interactions (personalized signals)
+6. **Assumption Registry** — inferred Goal/Approach cards, structured assumption list with confidence levels, confirm/override actions
+7. **Calibration preview** — shows what a returning user would see after 20 interactions (personalized signals)
 
 ### Tech stack
 - React + TypeScript + Tailwind CSS
@@ -854,6 +874,7 @@ A **deployed, interactive UI demonstration** of Claude Signal showing the soft v
 | **Demo: Risky Code** | Scenario B — yellow signal, CVE + edge case, progressive disclosure |
 | **Demo: Unsafe Code** | Scenario C — red signal, multiple issues, guided verification |
 | **Calibration Demo** | Shows how signals change over time for a returning user |
+| **Playground** | Live IDE with file explorer, Monaco editor, terminal, and Assumption Registry sidebar |
 | **About** | Problem statement, research summary, methodology |
 
 ---
