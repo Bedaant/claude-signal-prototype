@@ -23,6 +23,104 @@ function getLineContent(code, lineNum) {
   return code.split('\n')[lineNum - 1]?.trim() || '';
 }
 
+// ==================== ASSUMPTION REGISTRY ====================
+// Maps security findings to inferred assumptions the AI must have made
+
+function inferGoal(code, filename) {
+  const lower = code.toLowerCase();
+  const name = filename.toLowerCase();
+  if (/login|signin|authenticate|auth/.test(lower) || /login|auth/.test(name)) return 'Authenticate users and manage session state';
+  if (/register|signup|create.user/.test(lower)) return 'Register new users with validated input';
+  if (/api|endpoint|route/.test(lower)) return 'Build a REST API endpoint for data operations';
+  if (/fetch|scrape|crawl|request/.test(lower)) return 'Fetch and process external data';
+  if (/upload|file|storage/.test(lower)) return 'Handle file uploads and storage';
+  if (/dashboard|admin|panel/.test(lower)) return 'Render an administrative dashboard';
+  if (/search|query|filter/.test(lower)) return 'Search and filter data from a datastore';
+  if (/email|notify|send/.test(lower)) return 'Send notifications or messages to users';
+  return 'Process data and return a result';
+}
+
+function inferApproach(code, filename) {
+  const lower = code.toLowerCase();
+  const libs = [];
+  if (/flask/.test(lower)) libs.push('Flask');
+  if (/django/.test(lower)) libs.push('Django');
+  if (/express/.test(lower)) libs.push('Express');
+  if (/fastapi/.test(lower)) libs.push('FastAPI');
+  if (/bcrypt|passlib|hashlib/.test(lower)) libs.push('password hashing');
+  if (/jwt/.test(lower)) libs.push('JWT tokens');
+  if (/sqlite|postgres|mysql|mongodb/.test(lower)) libs.push('database');
+  if (/requests|axios|fetch/.test(lower)) libs.push('HTTP client');
+  if (/react|vue|angular/.test(lower)) libs.push('frontend framework');
+  if (/beautifulsoup|scrapy/.test(lower)) libs.push('web scraping');
+  if (/smtplib|sendgrid|mailgun/.test(lower)) libs.push('email service');
+  if (libs.length === 0) return 'Standard implementation using built-in language features';
+  return `Implementation using ${libs.slice(0, 3).join(', ')}`;
+}
+
+function findingToAssumption(finding) {
+  const msg = finding.message.toLowerCase();
+  let type = 'general';
+  let category = 'reliability';
+  let assumption = 'The code operates under standard conditions';
+  let confidence = 'medium';
+
+  if (/ghsa-|cve-|vulnerability|dependency/.test(msg) || (msg.includes(': ') && /requests|axios|express|flask|django|lodash/.test(msg.split(':')[0]))) {
+    type = 'dependency'; category = 'security'; assumption = 'Dependencies are up-to-date and free of known vulnerabilities'; confidence = 'low';
+  } else if (msg.includes('sql injection') || msg.includes('f-string') || msg.includes('.format()') || msg.includes('query')) {
+    type = 'input_validation'; category = 'security'; assumption = 'Input is already validated and safe for database queries'; confidence = 'low';
+  } else if (msg.includes('eval()') || msg.includes('exec()') || msg.includes('new function()') || msg.includes('pickle') || msg.includes('os.system') || msg.includes('subprocess')) {
+    type = 'input_safety'; category = 'security'; assumption = 'Input data is from a trusted source and safe to execute or deserialize'; confidence = 'low';
+  } else if (msg.includes('hardcoded') || msg.includes('password') || msg.includes('api key') || msg.includes('secret') || msg.includes('token')) {
+    type = 'environment'; category = 'security'; assumption = 'Secrets are managed securely outside of source code in this environment'; confidence = 'low';
+  } else if (msg.includes('timeout')) {
+    type = 'network'; category = 'reliability'; assumption = 'Network services are always responsive and fast'; confidence = 'medium';
+  } else if (msg.includes('auth') || msg.includes('authentication') || msg.includes('login_required')) {
+    type = 'auth'; category = 'security'; assumption = 'User is authenticated before reaching this code path'; confidence = 'medium';
+  } else if (msg.includes('file opened') || msg.includes('context manager') || msg.includes('with open')) {
+    type = 'resource'; category = 'reliability'; assumption = 'File handles and resources are cleaned up automatically'; confidence = 'medium';
+  } else if (msg.includes('debug mode') || msg.includes('debug=true')) {
+    type = 'environment'; category = 'security'; assumption = 'This code will not be deployed to production without configuration changes'; confidence = 'medium';
+  } else if (msg.includes('https') || msg.includes('http:') || msg.includes('ssl') || msg.includes('verify=false')) {
+    type = 'network'; category = 'security'; assumption = 'Network traffic is not subject to interception or man-in-the-middle attacks'; confidence = 'low';
+  } else if (msg.includes('input') || msg.includes('validation') || msg.includes('sanitize')) {
+    type = 'input_validation'; category = 'security'; assumption = 'External input is validated and sanitized upstream'; confidence = 'medium';
+  } else if (msg.includes('error handling') || msg.includes('try/catch') || msg.includes('exception') || msg.includes('async operation')) {
+    type = 'reliability'; category = 'reliability'; assumption = 'External operations (network, file, database) will succeed without failure'; confidence = 'medium';
+  } else if (msg.includes('innerhtml') || msg.includes('document.write') || msg.includes('xss')) {
+    type = 'input_safety'; category = 'security'; assumption = 'User-generated content is safe to render directly in the DOM'; confidence = 'low';
+  } else if (msg.includes('localstorage') || msg.includes('sensitive data stored')) {
+    type = 'environment'; category = 'security'; assumption = 'The browser environment is trusted and not vulnerable to XSS'; confidence = 'low';
+  } else if (msg.includes('redirect') || msg.includes('open redirect')) {
+    type = 'input_validation'; category = 'security'; assumption = 'Redirect targets are validated and safe'; confidence = 'medium';
+  }
+
+  return {
+    id: `assum-${Math.random().toString(36).substring(2, 10)}`,
+    type, category, assumption, confidence,
+    inferredFrom: `${finding.message} — detected on L${finding.line}${finding.file ? ` in ${finding.file}` : ''}`,
+    line: finding.line,
+    file: finding.file || finding.filename || 'main',
+    code: finding.code || '',
+    status: 'pending',
+    fix: finding.fix || null,
+  };
+}
+
+function buildAssumptionRegistry(findings, code, filename) {
+  const assumptions = findings.map(findingToAssumption);
+  const criticalCount = assumptions.filter(a => a.confidence === 'low').length;
+  const mediumCount = assumptions.filter(a => a.confidence === 'medium').length;
+  const highCount = assumptions.filter(a => a.confidence === 'high').length;
+  return {
+    goal: inferGoal(code, filename),
+    approach: inferApproach(code, filename),
+    assumptionCount: assumptions.length,
+    breakdown: { critical: criticalCount, medium: mediumCount, high: highCount },
+    assumptions,
+  };
+}
+
 // ==================== FIX SUGGESTIONS ====================
 
 const commonFixes = {
@@ -292,7 +390,8 @@ async function analyzeJavaScript(code, filename = 'main.js', allFiles = []) {
   const warnCount = checks.filter(c => c.status === 'warn').length;
   const level = failCount > 0 ? 'red' : warnCount > 0 ? 'yellow' : 'green';
 
-  return { level, label: level === 'green' ? 'High Confidence' : level === 'yellow' ? 'Medium Confidence' : 'Low Confidence', itemCount: failCount + warnCount, checks, findings, notChecked: ['Runtime behavior', 'Performance', 'Browser compat'], timeSaved: '~3 minutes' };
+  const reasoning = buildAssumptionRegistry(findings, code, filename);
+  return { level, label: level === 'green' ? 'High Confidence' : level === 'yellow' ? 'Medium Confidence' : 'Low Confidence', itemCount: failCount + warnCount, assumptionCount: reasoning.assumptionCount, checks, findings, reasoning, assumptions: reasoning.assumptions, notChecked: ['Runtime behavior', 'Performance', 'Browser compat'], timeSaved: '~3 minutes' };
 }
 
 // ==================== PYTHON ANALYSIS ====================
@@ -456,7 +555,8 @@ async function analyzePython(code, filename = 'main.py', allFiles = []) {
   const warnCount = checks.filter(c => c.status === 'warn').length;
   const level = failCount > 0 ? 'red' : warnCount > 0 ? 'yellow' : 'green';
 
-  return { level, label: level === 'green' ? 'High Confidence' : level === 'yellow' ? 'Medium Confidence' : 'Low Confidence', itemCount: failCount + warnCount, checks, findings, notChecked: ['Runtime behavior', 'Type checking (mypy)', 'Full pylint scan'], timeSaved: '~4 minutes' };
+  const reasoning = buildAssumptionRegistry(findings, code, filename);
+  return { level, label: level === 'green' ? 'High Confidence' : level === 'yellow' ? 'Medium Confidence' : 'Low Confidence', itemCount: failCount + warnCount, assumptionCount: reasoning.assumptionCount, checks, findings, reasoning, assumptions: reasoning.assumptions, notChecked: ['Runtime behavior', 'Type checking (mypy)', 'Full pylint scan'], timeSaved: '~4 minutes' };
 }
 
 // ==================== OSV CVE LOOKUP ====================
@@ -552,12 +652,22 @@ async function analyzeFiles(files, language) {
   const totalWarns = mergedChecks.filter(c => c.status === 'warn').length;
   const level = totalFails > 0 ? 'red' : totalWarns > 0 ? 'yellow' : 'green';
 
+  const allCode = files.map(f => f.content).join('\n');
+  const combinedReasoning = buildAssumptionRegistry(allFindings, allCode, 'project');
+  const firstFileGoal = allResults[0]?.reasoning?.goal;
+  const firstFileApproach = allResults[0]?.reasoning?.approach;
+  if (firstFileGoal) combinedReasoning.goal = firstFileGoal;
+  if (firstFileApproach) combinedReasoning.approach = firstFileApproach;
+
   return {
     level,
     label: level === 'green' ? 'High Confidence' : level === 'yellow' ? 'Medium Confidence' : 'Low Confidence',
     itemCount: totalFails + totalWarns,
+    assumptionCount: combinedReasoning.assumptionCount,
     checks: mergedChecks,
     findings: allFindings,
+    reasoning: combinedReasoning,
+    assumptions: combinedReasoning.assumptions,
     notChecked: ['Runtime behavior', 'Performance at scale', 'Dependency freshness'],
     timeSaved: `~${files.length * 2} minutes`,
     files: files.map(f => f.name)

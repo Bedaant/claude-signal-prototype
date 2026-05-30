@@ -7,6 +7,7 @@ import FileExplorer from '../components/FileExplorer';
 import TabBar from '../components/TabBar';
 import TerminalPanel from '../components/TerminalPanel';
 import FixPanel from '../components/FixPanel';
+import AssumptionRegistry from '../components/AssumptionRegistry';
 import SignalLogo from '../components/SignalLogo';
 import { generateCode, analyzeFiles, AnalysisResponse } from '../api/client';
 import { sampleProjects } from '../data/sampleProjects';
@@ -35,6 +36,9 @@ export default function Playground() {
   const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
   const [showIDE, setShowIDE] = useState(false);
   const [showFixPanel, setShowFixPanel] = useState(false);
+  const [rightPanelTab, setRightPanelTab] = useState<'findings' | 'assumptions'>('findings');
+  const [assumptionStatuses, setAssumptionStatuses] = useState<Record<string, 'pending' | 'confirmed' | 'overridden'>>({});
+  const [activeAssumptionId, setActiveAssumptionId] = useState<string | null>(null);
 
   const handleSetMode = useCallback((newMode: Mode) => {
     setMode(newMode);
@@ -42,6 +46,8 @@ export default function Playground() {
     setTerminalLogs([]);
     setError(null);
     setShowFixPanel(false);
+    setRightPanelTab('findings');
+    setAssumptionStatuses({});
 
     if (newMode === 'paste') {
       // Auto-create an empty file for pasting
@@ -215,8 +221,10 @@ export default function Playground() {
       level,
       label: level === 'green' ? 'High Confidence' : level === 'yellow' ? 'Medium Confidence' : 'Low Confidence',
       itemCount: totalFails + totalWarns,
+      assumptionCount: 0,
       checks: mergedChecks,
       findings: allFindings,
+      assumptions: [],
       notChecked: ['Runtime behavior', 'Performance at scale', 'Dependency freshness'],
       timeSaved: `~${results.length * 2} minutes`,
       files: results.flatMap(r => r.files || [])
@@ -604,16 +612,92 @@ export default function Playground() {
             {showFixPanel && signal && (
               <motion.div
                 initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 280, opacity: 1 }}
+                animate={{ width: 320, opacity: 1 }}
                 exit={{ width: 0, opacity: 0 }}
                 transition={{ duration: 0.25 }}
-                className="flex-shrink-0 border-l border-border-subtle bg-code-bg overflow-hidden"
+                className="flex-shrink-0 border-l border-border-subtle bg-code-bg overflow-hidden flex flex-col"
               >
-                <FixPanel
-                  findings={signal.findings || []}
-                  activeFile={activeFileData?.name || ''}
-                  onSelectFile={handleSelectFinding}
-                />
+                {/* Tabs */}
+                <div className="flex border-b border-border-subtle">
+                  <button
+                    onClick={() => setRightPanelTab('findings')}
+                    className={`flex-1 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+                      rightPanelTab === 'findings'
+                        ? 'text-accent border-b-2 border-accent'
+                        : 'text-text-dim hover:text-text-secondary'
+                    }`}
+                  >
+                    Findings
+                  </button>
+                  <button
+                    onClick={() => setRightPanelTab('assumptions')}
+                    className={`flex-1 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+                      rightPanelTab === 'assumptions'
+                        ? 'text-accent border-b-2 border-accent'
+                        : 'text-text-dim hover:text-text-secondary'
+                    }`}
+                  >
+                    Assumptions {signal.reasoning?.assumptionCount ? `(${signal.reasoning.assumptionCount})` : ''}
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-hidden">
+                  {rightPanelTab === 'findings' ? (
+                    <FixPanel
+                      findings={signal.findings || []}
+                      activeFile={activeFileData?.name || ''}
+                      onSelectFile={handleSelectFinding}
+                    />
+                  ) : signal.reasoning ? (
+                    <AssumptionRegistry
+                      reasoning={{
+                        ...signal.reasoning,
+                        assumptions: signal.reasoning.assumptions.map(a => ({
+                          ...a,
+                          status: assumptionStatuses[a.id] || a.status || 'pending',
+                        })),
+                      }}
+                      onConfirm={(id) => setAssumptionStatuses(prev => ({ ...prev, [id]: 'confirmed' }))}
+                      onOverride={(id) => {
+                        setAssumptionStatuses(prev => ({ ...prev, [id]: 'overridden' }));
+                        // Add inline comment
+                        const assumption = signal.reasoning?.assumptions.find(a => a.id === id);
+                        if (assumption && editorRef.current) {
+                          const model = editorRef.current.getModel();
+                          if (model) {
+                            const lineContent = model.getLineContent(assumption.line);
+                            const indent = lineContent.match(/^(\s*)/)?.[1] || '';
+                            model.applyEdits([{
+                              range: {
+                                startLineNumber: assumption.line,
+                                startColumn: 1,
+                                endLineNumber: assumption.line,
+                                endColumn: 1,
+                              },
+                              text: `${indent}// NOTE: ${assumption.assumption} assumed by user [Signal]\n`,
+                            }]);
+                          }
+                        }
+                      }}
+                      activeAssumptionId={activeAssumptionId}
+                      onAssumptionClick={(id) => {
+                        const assumption = signal.reasoning?.assumptions.find(a => a.id === id);
+                        if (assumption) {
+                          setActiveFile(files.find(f => f.name === assumption.file || f.id === assumption.file)?.id || activeFile);
+                          setActiveAssumptionId(id);
+                          setTimeout(() => {
+                            editorRef.current?.revealLineInCenter(assumption.line);
+                            editorRef.current?.setPosition({ lineNumber: assumption.line, column: 1 });
+                          }, 100);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="p-4 text-center text-text-muted text-sm">
+                      No assumptions detected.
+                    </div>
+                  )}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

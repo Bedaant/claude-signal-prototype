@@ -30,10 +30,42 @@ export interface Finding {
   };
 }
 
+export interface Assumption {
+  id: string;
+  type: string;
+  category: 'security' | 'reliability' | 'performance';
+  assumption: string;
+  confidence: 'high' | 'medium' | 'low';
+  inferredFrom: string;
+  line: number;
+  file: string;
+  code: string;
+  status: 'pending' | 'confirmed' | 'overridden';
+  fix?: {
+    title: string;
+    before: string;
+    after: string;
+    line?: number;
+  };
+}
+
+export interface Reasoning {
+  goal: string;
+  approach: string;
+  assumptionCount: number;
+  breakdown: {
+    critical: number;
+    medium: number;
+    high: number;
+  };
+  assumptions: Assumption[];
+}
+
 export interface AnalysisResponse {
   level: 'green' | 'yellow' | 'red';
   label: string;
   itemCount: number;
+  assumptionCount: number;
   checks: Array<{
     id: string;
     name: string;
@@ -45,6 +77,8 @@ export interface AnalysisResponse {
     findings?: Finding[];
   }>;
   findings?: Finding[];
+  reasoning?: Reasoning;
+  assumptions?: Assumption[];
   notChecked: string[];
   timeSaved: string;
   files?: string[];
@@ -167,8 +201,10 @@ export async function analyzeFiles(files: { name: string; content: string }[], l
       level,
       label: level === 'green' ? 'High Confidence' : level === 'yellow' ? 'Medium Confidence' : 'Low Confidence',
       itemCount: totalFails + totalWarns,
+      assumptionCount: 0,
       checks: mergedChecks,
       findings: allFindings,
+      assumptions: [],
       notChecked: ['Runtime behavior', 'Performance at scale', 'Dependency freshness'],
       timeSaved: `~${files.length * 2} minutes`,
       files: files.map(f => f.name)
